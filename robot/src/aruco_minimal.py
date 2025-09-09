@@ -10,10 +10,21 @@ import sys
 def main():
     """Main detection loop as per OpenCV documentation."""
     
-    # Setup dictionary and detector parameters exactly as in documentation
-    dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
-    detectorParams = cv2.aruco.DetectorParameters()
-    detector = cv2.aruco.ArucoDetector(dictionary, detectorParams)
+    # Setup dictionary and detector parameters with API version detection
+    use_new_api = hasattr(cv2.aruco, 'ArucoDetector')
+    
+    if use_new_api:
+        # New API (OpenCV 4.7+)
+        dictionary = cv2.aruco.getPredefinedDictionary(cv2.aruco.DICT_4X4_50)
+        detectorParams = cv2.aruco.DetectorParameters()
+        detector = cv2.aruco.ArucoDetector(dictionary, detectorParams)
+        print("Using OpenCV 4.7+ API")
+    else:
+        # Old API (OpenCV < 4.7)
+        dictionary = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
+        detectorParams = cv2.aruco.DetectorParameters_create()
+        detector = None
+        print("Using OpenCV < 4.7 API")
     
     # Open camera using the proven approach
     devs = sorted(glob.glob("/dev/v4l/by-id/*")) or ["/dev/video0"]
@@ -49,8 +60,13 @@ def main():
         # Copy image for display
         imageCopy = image.copy()
         
-        # Detect markers
-        markerCorners, markerIds, rejectedCandidates = detector.detectMarkers(image)
+        # Detect markers using appropriate API
+        if use_new_api:
+            markerCorners, markerIds, rejectedCandidates = detector.detectMarkers(image)
+        else:
+            markerCorners, markerIds, rejectedCandidates = cv2.aruco.detectMarkers(
+                image, dictionary, parameters=detectorParams
+            )
         
         # Draw results
         if len(markerCorners) > 0:

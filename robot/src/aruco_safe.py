@@ -44,10 +44,19 @@ def run_safe_aruco(camera_res=(1280, 720), dict_name="DICT_4X4_50", force_headle
     else:
         logger.info("Display available, will show live view")
     
-    # Setup ArUco using correct API
-    aruco_dict = cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, dict_name))
-    aruco_params = cv2.aruco.DetectorParameters()
-    detector = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
+    # Setup ArUco using appropriate API version
+    use_new_api = hasattr(cv2.aruco, 'ArucoDetector')
+    
+    if use_new_api:
+        # New API (OpenCV 4.7+)
+        aruco_dict = cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, dict_name))
+        aruco_params = cv2.aruco.DetectorParameters()
+        detector = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
+    else:
+        # Old API (OpenCV < 4.7)
+        aruco_dict = cv2.aruco.Dictionary_get(getattr(cv2.aruco, dict_name))
+        aruco_params = cv2.aruco.DetectorParameters_create()
+        detector = None
     
     # Open camera using the working approach
     import glob
@@ -110,8 +119,13 @@ def run_safe_aruco(camera_res=(1280, 720), dict_name="DICT_4X4_50", force_headle
             # Convert to grayscale for detection
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
-            # Detect markers using the detector object (OpenCV 4.7+ API)
-            corners, ids, rejected = detector.detectMarkers(gray)
+            # Detect markers using appropriate API
+            if use_new_api:
+                corners, ids, rejected = detector.detectMarkers(gray)
+            else:
+                corners, ids, rejected = cv2.aruco.detectMarkers(
+                    gray, aruco_dict, parameters=aruco_params
+                )
             
             # Process detections
             if ids is not None:

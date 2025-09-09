@@ -56,10 +56,21 @@ class ArucoDetector:
         if dict_name not in ARUCO_DICTS:
             raise ValueError(f"Unknown ArUco dictionary: {dict_name}. Available: {list(ARUCO_DICTS.keys())}")
             
-        # Use correct OpenCV 4.7+ API as per documentation
-        self.aruco_dict = cv2.aruco.getPredefinedDictionary(ARUCO_DICTS[dict_name])
-        self.aruco_params = cv2.aruco.DetectorParameters()
-        self.detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.aruco_params)
+        # Detect OpenCV version and use appropriate API
+        self.use_new_api = hasattr(cv2.aruco, 'ArucoDetector')
+        
+        if self.use_new_api:
+            # New API (OpenCV 4.7+)
+            self.aruco_dict = cv2.aruco.getPredefinedDictionary(ARUCO_DICTS[dict_name])
+            self.aruco_params = cv2.aruco.DetectorParameters()
+            self.detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.aruco_params)
+            logger.info("Using OpenCV 4.7+ ArUco API")
+        else:
+            # Old API (OpenCV < 4.7)
+            self.aruco_dict = cv2.aruco.Dictionary_get(ARUCO_DICTS[dict_name])
+            self.aruco_params = cv2.aruco.DetectorParameters_create()
+            self.detector = None  # Not used in old API
+            logger.info("Using OpenCV < 4.7 ArUco API")
         
         # Setup camera
         self.camera = CameraInterface(camera_width, camera_height)
@@ -87,8 +98,15 @@ class ArucoDetector:
         # Convert BGR to grayscale for detection
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
-        # Detect markers using the detector object (OpenCV 4.7+ API)
-        corners, ids, rejected = self.detector.detectMarkers(gray)
+        # Detect markers using appropriate API
+        if self.use_new_api:
+            # New API (OpenCV 4.7+)
+            corners, ids, rejected = self.detector.detectMarkers(gray)
+        else:
+            # Old API (OpenCV < 4.7)
+            corners, ids, rejected = cv2.aruco.detectMarkers(
+                gray, self.aruco_dict, parameters=self.aruco_params
+            )
         
         marker_ids = []
         marker_corners = []
