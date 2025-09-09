@@ -45,8 +45,8 @@ def list_all_cameras():
     
     available = CameraInterface.list_cameras()
     if available:
-        for i in available:
-            print(f"✓ Camera {i}: Available")
+        for device in available:
+            print(f"✓ {device}")
     else:
         print("❌ No cameras found")
     
@@ -150,9 +150,9 @@ def main():
         print("Try: sudo usermod -a -G video $USER")
         return 1
         
-    # Test first available camera
-    camera_index = available[0]
-    test_camera_properties(camera_index)
+    # Test camera properties if any available
+    if available:
+        test_camera_properties(0)  # Test with default index
     
     # Test BevBot interface
     success = test_bevbot_camera_interface()

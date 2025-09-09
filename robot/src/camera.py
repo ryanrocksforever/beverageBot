@@ -33,6 +33,7 @@ class CameraInterface:
         self.camera_index = camera_index
         self._camera: Optional[cv2.VideoCapture] = None
         self._is_running = False
+        self._device_path = None
         
     def start(self) -> None:
         """Start the USB camera and configure it."""
@@ -41,76 +42,80 @@ class CameraInterface:
             return
             
         try:
-            # Try different backends for better compatibility
-            backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
+            import glob
+            import os
+            
+            # Try stable device paths first (like the working script)
+            device_paths = []
+            
+            # Prefer stable paths if available
+            stable_devs = sorted(glob.glob("/dev/v4l/by-id/*"))
+            if stable_devs:
+                for dev in stable_devs:
+                    try:
+                        path = os.path.realpath(dev)
+                        device_paths.append(path)
+                    except:
+                        continue
+            
+            # Fallback to standard video devices
+            for i in range(self.camera_index, self.camera_index + 3):
+                device_paths.append(f"/dev/video{i}")
+                
+            # Also try the index directly as last resort
+            device_paths.append(self.camera_index)
             
             self._camera = None
-            for backend in backends:
+            working_path = None
+            
+            for dev_path in device_paths:
                 try:
-                    logger.info(f"Trying camera backend: {backend}")
-                    test_camera = cv2.VideoCapture(self.camera_index, backend)
+                    logger.info(f"Trying camera path: {dev_path}")
+                    
+                    # Use V4L2 backend specifically (like working script)
+                    if isinstance(dev_path, str):
+                        test_camera = cv2.VideoCapture(dev_path, cv2.CAP_V4L2)
+                    else:
+                        test_camera = cv2.VideoCapture(dev_path, cv2.CAP_V4L2)
+                        
                     if test_camera.isOpened():
-                        self._camera = test_camera
-                        logger.info(f"Successfully opened camera with backend {backend}")
-                        break
+                        # Test if we can actually read a frame
+                        ret, test_frame = test_camera.read()
+                        if ret and test_frame is not None and test_frame.size > 0:
+                            self._camera = test_camera
+                            working_path = dev_path
+                            logger.info(f"Successfully opened camera: {dev_path}")
+                            break
+                        else:
+                            test_camera.release()
+                            logger.warning(f"Camera {dev_path} opened but no frames")
                     else:
                         test_camera.release()
+                        logger.warning(f"Cannot open camera: {dev_path}")
+                        
                 except Exception as e:
-                    logger.warning(f"Backend {backend} failed: {e}")
+                    logger.warning(f"Error with camera {dev_path}: {e}")
                     
-            if self._camera is None or not self._camera.isOpened():
-                raise RuntimeError(f"Cannot open USB camera at index {self.camera_index} with any backend")
+            if self._camera is None:
+                raise RuntimeError("Cannot open any USB camera device")
+                
+            self._device_path = working_path
             
-            # Set codec to MJPG for better compatibility
-            self._camera.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'))
-            
-            # Configure camera resolution
+            # Configure camera resolution (like working script)
             self._camera.set(cv2.CAP_PROP_FRAME_WIDTH, self.width)
             self._camera.set(cv2.CAP_PROP_FRAME_HEIGHT, self.height)
             
-            # Set additional properties for better quality
-            self._camera.set(cv2.CAP_PROP_FPS, 30)
-            self._camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # Reduce latency
-            
-            # Verify actual resolution
+            # Get actual resolution
             actual_width = int(self._camera.get(cv2.CAP_PROP_FRAME_WIDTH))
             actual_height = int(self._camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
             
-            # If resolution is 0x0, try some common fallback resolutions
-            if actual_width == 0 or actual_height == 0:
-                logger.warning("Camera returned 0x0 resolution, trying fallback resolutions...")
-                fallback_resolutions = [(1280, 720), (640, 480), (320, 240)]
-                
-                for fb_width, fb_height in fallback_resolutions:
-                    self._camera.set(cv2.CAP_PROP_FRAME_WIDTH, fb_width)
-                    self._camera.set(cv2.CAP_PROP_FRAME_HEIGHT, fb_height)
-                    actual_width = int(self._camera.get(cv2.CAP_PROP_FRAME_WIDTH))
-                    actual_height = int(self._camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                    
-                    if actual_width > 0 and actual_height > 0:
-                        logger.info(f"Fallback resolution {fb_width}x{fb_height} successful")
-                        break
-                        
-                if actual_width == 0 or actual_height == 0:
-                    raise RuntimeError("Camera unable to set any valid resolution")
+            logger.info(f"Camera started: {working_path}")
+            logger.info(f"Resolution: {actual_width}x{actual_height} (requested {self.width}x{self.height})")
             
-            logger.info(f"USB camera started at {actual_width}x{actual_height} (requested {self.width}x{self.height})")
-            
-            # Test frame capture before marking as ready
-            logger.info("Testing initial frame capture...")
-            for attempt in range(5):
-                ret, test_frame = self._camera.read()
-                if ret and test_frame is not None and test_frame.size > 0:
-                    logger.info(f"Frame capture test successful on attempt {attempt + 1}")
-                    break
-                time.sleep(0.2)
-            else:
-                raise RuntimeError("Camera unable to capture valid frames")
-                
-            # Allow camera to warm up
-            time.sleep(1.0)
+            # Quick warmup
+            time.sleep(0.5)
             self._is_running = True
-            logger.info("USB camera warmed up and ready")
+            logger.info("USB camera ready")
             
         except Exception as e:
             logger.error(f"Failed to start USB camera: {e}")
@@ -143,18 +148,14 @@ class CameraInterface:
         if not self._is_running or self._camera is None:
             raise RuntimeError("Camera not started")
             
-        # Try multiple times to get a valid frame
-        for attempt in range(3):
-            ret, frame = self._camera.read()
-            timestamp = time.time()
+        # Simple frame capture like working script
+        ret, frame = self._camera.read()
+        timestamp = time.time()
+        
+        if not ret or frame is None:
+            raise RuntimeError("Failed to capture frame from USB camera")
             
-            if ret and frame is not None and frame.size > 0:
-                return frame, timestamp
-            
-            logger.warning(f"Frame capture attempt {attempt + 1} failed, retrying...")
-            time.sleep(0.01)
-            
-        raise RuntimeError("Failed to capture frame from USB camera after multiple attempts")
+        return frame, timestamp
         
     def capture_stream(self) -> Generator[Tuple[np.ndarray, float], None, None]:
         """Continuous frame capture generator.
@@ -197,37 +198,72 @@ class CameraInterface:
             if not CV2_AVAILABLE:
                 return False
                 
-            # Test with different backends
-            backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
-            for backend in backends:
-                try:
-                    test_cam = cv2.VideoCapture(self.camera_index, backend)
-                    if test_cam.isOpened():
-                        # Try to read a frame to ensure it's really working
-                        ret, frame = test_cam.read()
+            import glob
+            import os
+            
+            # Check stable paths first (like working script)
+            stable_devs = sorted(glob.glob("/dev/v4l/by-id/*"))
+            if stable_devs:
+                for dev in stable_devs[:1]:  # Just check first one
+                    try:
+                        path = os.path.realpath(dev)
+                        test_cam = cv2.VideoCapture(path, cv2.CAP_V4L2)
+                        if test_cam.isOpened():
+                            ret, frame = test_cam.read()
+                            test_cam.release()
+                            if ret and frame is not None:
+                                return True
                         test_cam.release()
-                        return ret and frame is not None
-                    test_cam.release()
-                except Exception:
-                    continue
+                    except:
+                        continue
+                        
+            # Fallback to index-based check
+            test_cam = cv2.VideoCapture(self.camera_index, cv2.CAP_V4L2)
+            if test_cam.isOpened():
+                ret, frame = test_cam.read()
+                test_cam.release()
+                return ret and frame is not None
+            test_cam.release()
             return False
+            
         except Exception:
             return False
             
     @staticmethod
-    def list_cameras() -> List[int]:
-        """List available camera indices."""
+    def list_cameras() -> List[str]:
+        """List available camera devices."""
+        import glob
+        import os
+        
         available = []
-        for i in range(10):  # Check first 10 indices
+        
+        # List stable device paths
+        stable_devs = sorted(glob.glob("/dev/v4l/by-id/*"))
+        for dev in stable_devs:
             try:
-                cap = cv2.VideoCapture(i)
+                path = os.path.realpath(dev)
+                cap = cv2.VideoCapture(path, cv2.CAP_V4L2)
                 if cap.isOpened():
                     ret, frame = cap.read()
                     if ret and frame is not None:
-                        available.append(i)
+                        available.append(f"{dev} -> {path}")
                 cap.release()
             except Exception:
                 continue
+                
+        # Also check standard video devices
+        for i in range(5):
+            try:
+                path = f"/dev/video{i}"
+                cap = cv2.VideoCapture(path, cv2.CAP_V4L2)
+                if cap.isOpened():
+                    ret, frame = cap.read()
+                    if ret and frame is not None:
+                        available.append(path)
+                cap.release()
+            except Exception:
+                continue
+                
         return available
             
     def __enter__(self):
