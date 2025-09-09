@@ -44,9 +44,10 @@ def run_safe_aruco(camera_res=(1280, 720), dict_name="DICT_4X4_50", force_headle
     else:
         logger.info("Display available, will show live view")
     
-    # Setup ArUco
-    aruco_dict = cv2.aruco.getPredefinedDictionary(cv2.aruco.__dict__[dict_name])
+    # Setup ArUco using correct API
+    aruco_dict = cv2.aruco.getPredefinedDictionary(getattr(cv2.aruco, dict_name))
     aruco_params = cv2.aruco.DetectorParameters()
+    detector = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
     
     # Open camera using the working approach
     import glob
@@ -109,13 +110,8 @@ def run_safe_aruco(camera_res=(1280, 720), dict_name="DICT_4X4_50", force_headle
             # Convert to grayscale for detection
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             
-            # Detect markers
-            try:
-                detector = cv2.aruco.ArucoDetector(aruco_dict, aruco_params)
-                corners, ids, rejected = detector.detectMarkers(gray)
-            except AttributeError:
-                # Fallback for older OpenCV
-                corners, ids, rejected = cv2.aruco.detectMarkers(gray, aruco_dict, parameters=aruco_params)
+            # Detect markers using the detector object (OpenCV 4.7+ API)
+            corners, ids, rejected = detector.detectMarkers(gray)
             
             # Process detections
             if ids is not None:

@@ -56,13 +56,8 @@ class ArucoMarkerGenerator:
             raise ValueError(f"Unknown ArUco dictionary: {dict_name}. Available: {list(ARUCO_DICTS.keys())}")
             
         self.dict_name = dict_name
-        # Use newer OpenCV ArUco API (4.7+) with fallback to older API
-        try:
-            # New API (OpenCV 4.7+)
-            self.aruco_dict = cv2.aruco.getPredefinedDictionary(ARUCO_DICTS[dict_name])
-        except AttributeError:
-            # Fallback to older API
-            self.aruco_dict = cv2.aruco.Dictionary_get(ARUCO_DICTS[dict_name])
+        # Use correct OpenCV 4.7+ API as per documentation
+        self.aruco_dict = cv2.aruco.getPredefinedDictionary(ARUCO_DICTS[dict_name])
         self.marker_size_pixels = marker_size_pixels
         
         logger.info(f"ArUco marker generator initialized with {dict_name}")
@@ -76,8 +71,9 @@ class ArucoMarkerGenerator:
         Returns:
             Marker image as numpy array (grayscale)
         """
+        # Generate marker using correct API as per documentation
         marker_img = np.zeros((self.marker_size_pixels, self.marker_size_pixels), dtype=np.uint8)
-        marker_img = cv2.aruco.drawMarker(self.aruco_dict, marker_id, self.marker_size_pixels, marker_img, 1)
+        cv2.aruco.generateImageMarker(self.aruco_dict, marker_id, self.marker_size_pixels, marker_img, 1)
         return marker_img
         
     def save_marker_png(self, marker_id: int, output_path: str) -> None:
