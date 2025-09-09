@@ -209,9 +209,10 @@ class ArucoDetector:
             logger.info("Starting ArUco detection...")
             
             if not self.camera.is_available():
-                logger.error("Camera not available")
+                logger.error("Camera not available. Try running: ./scripts/debug_camera.sh")
                 return
                 
+            logger.info("Camera is available, starting...")
             self.camera.start()
             
             if self.display:
@@ -270,6 +271,7 @@ class ArucoDetector:
                     break
                 except Exception as e:
                     logger.error(f"Error in detection loop: {e}")
+                    logger.info("Try running: ./scripts/debug_camera.sh for diagnosis")
                     break
                     
         except Exception as e:
