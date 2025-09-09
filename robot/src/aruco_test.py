@@ -56,8 +56,15 @@ class ArucoDetector:
         if dict_name not in ARUCO_DICTS:
             raise ValueError(f"Unknown ArUco dictionary: {dict_name}. Available: {list(ARUCO_DICTS.keys())}")
             
-        self.aruco_dict = cv2.aruco.Dictionary_get(ARUCO_DICTS[dict_name])
-        self.aruco_params = cv2.aruco.DetectorParameters_create()
+        # Use newer OpenCV ArUco API (4.7+) with fallback to older API
+        try:
+            # New API (OpenCV 4.7+)
+            self.aruco_dict = cv2.aruco.getPredefinedDictionary(ARUCO_DICTS[dict_name])
+            self.aruco_params = cv2.aruco.DetectorParameters()
+        except AttributeError:
+            # Fallback to older API
+            self.aruco_dict = cv2.aruco.Dictionary_get(ARUCO_DICTS[dict_name])
+            self.aruco_params = cv2.aruco.DetectorParameters_create()
         
         # Setup camera
         self.camera = CameraInterface(camera_width, camera_height)
@@ -85,10 +92,16 @@ class ArucoDetector:
         # Convert BGR to grayscale for detection
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
-        # Detect markers
-        corners, ids, rejected = cv2.aruco.detectMarkers(
-            gray, self.aruco_dict, parameters=self.aruco_params
-        )
+        # Detect markers - try new API first, fallback to old
+        try:
+            # New API (OpenCV 4.7+)
+            detector = cv2.aruco.ArucoDetector(self.aruco_dict, self.aruco_params)
+            corners, ids, rejected = detector.detectMarkers(gray)
+        except AttributeError:
+            # Fallback to older API
+            corners, ids, rejected = cv2.aruco.detectMarkers(
+                gray, self.aruco_dict, parameters=self.aruco_params
+            )
         
         marker_ids = []
         marker_corners = []
@@ -117,29 +130,76 @@ class ArucoDetector:
         display_frame = frame.copy()
         
         # Draw marker boundaries and IDs
-        cv2.aruco.drawDetectedMarkers(display_frame, corners, np.array(ids))
+        if len(corners) > 0:
+            cv2.aruco.drawDetectedMarkers(display_frame, corners, np.array(ids))
         
-        # Draw ID text with background
+        # BevBot location mapping
+        location_map = {
+            1: "Home Base",
+            2: "Fridge Side", 
+            3: "Fridge Pickup",
+            4: "Couch",
+            5: "Outside"
+        }
+        
+        # Draw enhanced marker information
         for i, (marker_id, corner) in enumerate(zip(ids, corners)):
-            # Get center of marker
+            # Get center and corners of marker
             center = corner[0].mean(axis=0).astype(int)
+            corner_points = corner[0].astype(int)
             
-            # Draw text background
-            text = f"ID: {marker_id}"
-            font_scale = 0.7
+            # Calculate marker size (distance between opposite corners)
+            marker_size = np.linalg.norm(corner_points[0] - corner_points[2])
+            
+            # Get location name
+            location = location_map.get(marker_id, "Unknown")
+            
+            # Create info text
+            info_lines = [
+                f"ID: {marker_id}",
+                f"Location: {location}",
+                f"Size: {marker_size:.1f}px"
+            ]
+            
+            # Draw info box with background
+            font_scale = 0.6
             thickness = 2
-            (text_w, text_h), baseline = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+            line_height = 20
+            box_padding = 5
             
-            # Background rectangle
-            cv2.rectangle(display_frame, 
-                         (center[0] - text_w//2 - 5, center[1] - text_h - 10),
-                         (center[0] + text_w//2 + 5, center[1] + baseline),
-                         (0, 0, 0), -1)
+            # Calculate text dimensions
+            max_width = 0
+            for line in info_lines:
+                (text_w, text_h), _ = cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+                max_width = max(max_width, text_w)
             
-            # White text
-            cv2.putText(display_frame, text,
-                       (center[0] - text_w//2, center[1] - 5),
-                       cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness)
+            box_height = len(info_lines) * line_height + box_padding * 2
+            box_width = max_width + box_padding * 2
+            
+            # Position info box (offset from marker center)
+            box_x = center[0] + 30
+            box_y = center[1] - box_height // 2
+            
+            # Keep box within frame bounds
+            box_x = max(5, min(box_x, display_frame.shape[1] - box_width - 5))
+            box_y = max(5, min(box_y, display_frame.shape[0] - box_height - 5))
+            
+            # Draw semi-transparent background
+            overlay = display_frame.copy()
+            cv2.rectangle(overlay, (box_x, box_y), (box_x + box_width, box_y + box_height), (0, 0, 0), -1)
+            cv2.addWeighted(overlay, 0.7, display_frame, 0.3, 0, display_frame)
+            
+            # Draw border
+            cv2.rectangle(display_frame, (box_x, box_y), (box_x + box_width, box_y + box_height), (0, 255, 0), 2)
+            
+            # Draw text lines
+            for j, line in enumerate(info_lines):
+                text_y = box_y + box_padding + (j + 1) * line_height - 5
+                cv2.putText(display_frame, line, (box_x + box_padding, text_y),
+                           cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness)
+                           
+            # Draw line from marker center to info box
+            cv2.line(display_frame, tuple(center), (box_x, box_y + box_height // 2), (0, 255, 0), 2)
                        
         return display_frame
         
@@ -155,8 +215,11 @@ class ArucoDetector:
             self.camera.start()
             
             if self.display:
-                cv2.namedWindow("ArUco Detection", cv2.WINDOW_AUTOSIZE)
-                logger.info("Press 'q' or Ctrl+C to quit")
+                cv2.namedWindow("BevBot ArUco Detection", cv2.WINDOW_AUTOSIZE)
+                logger.info("Live view controls:")
+                logger.info("  'q' or ESC: Quit")
+                logger.info("  'f': Toggle fullscreen")
+                logger.info("  's': Save current frame")
                 
             frame_count = 0
             start_time = time.time()
@@ -179,17 +242,24 @@ class ArucoDetector:
                     if self.display:
                         display_frame = self.draw_markers(frame, marker_ids, marker_corners)
                         
-                        # Add FPS info
-                        fps = frame_count / (time.time() - start_time + 0.001)
-                        cv2.putText(display_frame, f"FPS: {fps:.1f} | Dict: {self.dict_name}",
-                                   (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 255, 0), 2)
+                        # Add status overlay
+                        self._add_status_overlay(display_frame, frame_count, start_time, marker_ids)
                         
-                        cv2.imshow("ArUco Detection", display_frame)
+                        cv2.imshow("BevBot ArUco Detection", display_frame)
                         
                         # Handle window events
                         key = cv2.waitKey(1) & 0xFF
                         if key == ord('q') or key == 27:  # 'q' or ESC
                             break
+                        elif key == ord('f'):  # Toggle fullscreen
+                            if cv2.getWindowProperty("BevBot ArUco Detection", cv2.WND_PROP_FULLSCREEN) == cv2.WINDOW_FULLSCREEN:
+                                cv2.setWindowProperty("BevBot ArUco Detection", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_AUTOSIZE)
+                            else:
+                                cv2.setWindowProperty("BevBot ArUco Detection", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+                        elif key == ord('s'):  # Save frame
+                            filename = f"aruco_frame_{int(time.time())}.jpg"
+                            cv2.imwrite(filename, display_frame)
+                            logger.info(f"Frame saved as {filename}")
                             
                     frame_count += 1
                     
@@ -206,6 +276,66 @@ class ArucoDetector:
             logger.error(f"ArUco detection failed: {e}")
         finally:
             self.cleanup()
+            
+    def _add_status_overlay(self, frame: np.ndarray, frame_count: int, start_time: float, marker_ids: List[int]) -> None:
+        """Add status information overlay to frame."""
+        # Calculate FPS
+        fps = frame_count / (time.time() - start_time + 0.001)
+        
+        # Get camera info
+        actual_width, actual_height = self.camera.get_actual_resolution()
+        camera_fps = self.camera.get_fps()
+        
+        # Status information
+        status_lines = [
+            f"FPS: {fps:.1f} (Camera: {camera_fps:.0f})",
+            f"Resolution: {actual_width}x{actual_height}",
+            f"Dictionary: {self.dict_name}",
+            f"Frame: {frame_count}",
+            f"Markers: {len(marker_ids)} detected"
+        ]
+        
+        if marker_ids:
+            status_lines.append(f"IDs: {marker_ids}")
+        
+        # Draw status box
+        font_scale = 0.5
+        thickness = 1
+        line_height = 18
+        box_padding = 8
+        
+        # Calculate box dimensions
+        max_width = 0
+        for line in status_lines:
+            (text_w, text_h), _ = cv2.getTextSize(line, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+            max_width = max(max_width, text_w)
+        
+        box_height = len(status_lines) * line_height + box_padding * 2
+        box_width = max_width + box_padding * 2
+        
+        # Position at top-left
+        box_x, box_y = 10, 10
+        
+        # Draw semi-transparent background
+        overlay = frame.copy()
+        cv2.rectangle(overlay, (box_x, box_y), (box_x + box_width, box_y + box_height), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.7, frame, 0.3, 0, frame)
+        
+        # Draw border
+        cv2.rectangle(frame, (box_x, box_y), (box_x + box_width, box_y + box_height), (0, 255, 0), 1)
+        
+        # Draw status text
+        for i, line in enumerate(status_lines):
+            text_y = box_y + box_padding + (i + 1) * line_height - 3
+            cv2.putText(frame, line, (box_x + box_padding, text_y),
+                       cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness)
+        
+        # Add controls info at bottom
+        controls = ["Controls: Q=Quit  F=Fullscreen  S=Save"]
+        for i, line in enumerate(controls):
+            text_y = frame.shape[0] - 20 - i * 20
+            cv2.putText(frame, line, (10, text_y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
             
     def cleanup(self) -> None:
         """Clean up resources."""

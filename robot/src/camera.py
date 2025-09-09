@@ -125,6 +125,20 @@ class CameraInterface:
         """Get expected frame shape (height, width, channels)."""
         return (self.height, self.width, 3)
         
+    def get_actual_resolution(self) -> Tuple[int, int]:
+        """Get actual camera resolution if running."""
+        if self._camera is not None and self._is_running:
+            actual_width = int(self._camera.get(cv2.CAP_PROP_FRAME_WIDTH))
+            actual_height = int(self._camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
+            return (actual_width, actual_height)
+        return (self.width, self.height)
+        
+    def get_fps(self) -> float:
+        """Get camera FPS setting."""
+        if self._camera is not None and self._is_running:
+            return self._camera.get(cv2.CAP_PROP_FPS)
+        return 30.0
+        
     def is_available(self) -> bool:
         """Check if USB camera hardware is available."""
         try:

@@ -7,9 +7,10 @@ pigpio
 opencv-python
 numpy
 
+# PDF generation for ArUco markers
+reportlab
+
 # Camera interface (Raspberry Pi only - may need apt install)
 # Note: On Raspberry Pi, prefer system packages:
-# sudo apt install python3-picamera2 python3-opencv
+# sudo apt install python3-opencv
 # This requirements.txt is for development/testing on other platforms
-
-# picamera2  # Uncomment if not using system package

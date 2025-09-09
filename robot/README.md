@@ -88,9 +88,27 @@ cd robot
 ./scripts/run_aruco.sh
 
 # With options:
-./scripts/run_aruco.sh --dict DICT_5X5_50 --camera-res 640x480
+./scripts/run_aruco.sh --dict DICT_5X5_50 --camera-res 1280x720
 ./scripts/run_aruco.sh --no-display  # Headless mode
 ```
+
+### Generate ArUco Markers
+Create printable ArUco markers for BevBot locations:
+```bash
+cd robot
+./scripts/generate_markers.sh
+
+# With options:
+./scripts/generate_markers.sh --dict DICT_4X4_50 --marker-size 2.0
+./scripts/generate_markers.sh --list-locations  # Show all locations
+```
+
+This generates `bevbot_markers.pdf` with markers for:
+- ID 1: Home Base/Resting position
+- ID 2: Fridge side/Open position  
+- ID 3: Fridge pickup/Close in position
+- ID 4: Couch/Dropoff 1
+- ID 5: Outside/Dropoff 2
 
 ## Safety Features
 
@@ -119,14 +137,16 @@ sudo systemctl restart pigpiod
 python3 -c "import pigpio; pi = pigpio.pi(); print('Connected:', pi.connected); pi.stop()"
 ```
 
-### Camera Issues
+### USB Camera Issues
 ```bash
-# Enable camera in raspi-config
-sudo raspi-config
-# Navigate to Interface Options > Camera > Enable
+# List USB devices
+lsusb | grep -i camera
 
-# Check camera detection
-python3 -c "from picamera2 import Picamera2; cam = Picamera2(); print('Camera OK'); cam.close()"
+# List video devices
+v4l2-ctl --list-devices
+
+# Test camera
+python3 -c "import cv2; cam = cv2.VideoCapture(0); print('Camera:', 'OK' if cam.isOpened() else 'FAILED'); cam.release()"
 ```
 
 ### Permission Issues
@@ -141,12 +161,20 @@ sudo usermod -a -G video $USER
 - `src/pins.py`: GPIO pin definitions and PWM utilities
 - `src/motor.py`: BTS7960 motor driver with shared pigpio instance
 - `src/actuator.py`: Linear actuator wrapper using BTS7960 driver
-- `src/camera.py`: Picamera2 interface with frame capture
+- `src/camera.py`: USB camera interface with OpenCV
 - `src/io_test.py`: Hardware test suite
 - `src/aruco_test.py`: ArUco detection with live preview
+- `src/generate_markers.py`: ArUco marker generator with PDF export
 - `scripts/setup.sh`: System setup and dependency installation
 - `scripts/run_*.sh`: Test execution scripts
+- `scripts/generate_markers.sh`: ArUco marker generation script
 
 ## Development Notes
 
-This project is designed for deployment on Raspberry Pi 5 but can be developed on other platforms. Hardware-specific modules (pigpio, picamera2) will show import warnings on non-Pi systems but won't break the code structure.
+This project is designed for deployment on Raspberry Pi 5 but can be developed on other platforms. Hardware-specific modules (pigpio) will show import warnings on non-Pi systems but won't break the code structure.
+
+To generate markers on Windows/development systems:
+```bash
+pip install opencv-python reportlab
+python -m src.generate_markers --output bevbot_markers.pdf
+```
