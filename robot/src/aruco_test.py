@@ -216,11 +216,18 @@ class ArucoDetector:
             self.camera.start()
             
             if self.display:
-                cv2.namedWindow("BevBot ArUco Detection", cv2.WINDOW_AUTOSIZE)
-                logger.info("Live view controls:")
-                logger.info("  'q' or ESC: Quit")
-                logger.info("  'f': Toggle fullscreen")
-                logger.info("  's': Save current frame")
+                try:
+                    # Try to create window with error handling
+                    cv2.namedWindow("BevBot ArUco Detection", cv2.WINDOW_NORMAL)
+                    cv2.resizeWindow("BevBot ArUco Detection", 1280, 720)
+                    logger.info("Live view controls:")
+                    logger.info("  'q' or ESC: Quit")
+                    logger.info("  'f': Toggle fullscreen")
+                    logger.info("  's': Save current frame")
+                except Exception as e:
+                    logger.error(f"Cannot create display window: {e}")
+                    logger.info("Falling back to headless mode")
+                    self.display = False
                 
             frame_count = 0
             start_time = time.time()
@@ -241,26 +248,34 @@ class ArucoDetector:
                         
                     # Display if requested
                     if self.display:
-                        display_frame = self.draw_markers(frame, marker_ids, marker_corners)
-                        
-                        # Add status overlay
-                        self._add_status_overlay(display_frame, frame_count, start_time, marker_ids)
-                        
-                        cv2.imshow("BevBot ArUco Detection", display_frame)
-                        
-                        # Handle window events
-                        key = cv2.waitKey(1) & 0xFF
-                        if key == ord('q') or key == 27:  # 'q' or ESC
-                            break
-                        elif key == ord('f'):  # Toggle fullscreen
-                            if cv2.getWindowProperty("BevBot ArUco Detection", cv2.WND_PROP_FULLSCREEN) == cv2.WINDOW_FULLSCREEN:
-                                cv2.setWindowProperty("BevBot ArUco Detection", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_AUTOSIZE)
-                            else:
-                                cv2.setWindowProperty("BevBot ArUco Detection", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
-                        elif key == ord('s'):  # Save frame
-                            filename = f"aruco_frame_{int(time.time())}.jpg"
-                            cv2.imwrite(filename, display_frame)
-                            logger.info(f"Frame saved as {filename}")
+                        try:
+                            display_frame = self.draw_markers(frame, marker_ids, marker_corners)
+                            
+                            # Add status overlay
+                            self._add_status_overlay(display_frame, frame_count, start_time, marker_ids)
+                            
+                            cv2.imshow("BevBot ArUco Detection", display_frame)
+                            
+                            # Handle window events
+                            key = cv2.waitKey(1) & 0xFF
+                            if key == ord('q') or key == 27:  # 'q' or ESC
+                                break
+                            elif key == ord('f'):  # Toggle fullscreen
+                                try:
+                                    if cv2.getWindowProperty("BevBot ArUco Detection", cv2.WND_PROP_FULLSCREEN) == cv2.WINDOW_FULLSCREEN:
+                                        cv2.setWindowProperty("BevBot ArUco Detection", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_NORMAL)
+                                    else:
+                                        cv2.setWindowProperty("BevBot ArUco Detection", cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+                                except:
+                                    pass  # Ignore fullscreen errors
+                            elif key == ord('s'):  # Save frame
+                                filename = f"aruco_frame_{int(time.time())}.jpg"
+                                cv2.imwrite(filename, display_frame)
+                                logger.info(f"Frame saved as {filename}")
+                        except Exception as e:
+                            logger.error(f"Display error: {e}")
+                            logger.info("Disabling display, continuing in headless mode")
+                            self.display = False
                             
                     frame_count += 1
                     
