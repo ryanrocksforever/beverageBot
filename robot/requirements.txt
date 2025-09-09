@@ -1,0 +1,15 @@
+# BevBot Python dependencies
+
+# GPIO control (Raspberry Pi only)
+pigpio
+
+# Computer vision
+opencv-python
+numpy
+
+# Camera interface (Raspberry Pi only - may need apt install)
+# Note: On Raspberry Pi, prefer system packages:
+# sudo apt install python3-picamera2 python3-opencv
+# This requirements.txt is for development/testing on other platforms
+
+# picamera2  # Uncomment if not using system package
