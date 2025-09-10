@@ -79,14 +79,14 @@ class RobotController:
     def _init_hardware(self):
         """Initialize hardware components."""
         try:
-            # Initialize motors
+            # Initialize motors (both inverted)
             self.left_motor = BTS7960Motor(
                 r_en_pin=LEFT_MOTOR_R_EN,
                 l_en_pin=LEFT_MOTOR_L_EN,
                 rpwm_pin=LEFT_MOTOR_RPWM,
                 lpwm_pin=LEFT_MOTOR_LPWM,
                 name="left",
-                invert=False
+                invert=True  # Left motor inverted
             )
             
             self.right_motor = BTS7960Motor(
@@ -95,7 +95,7 @@ class RobotController:
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
                 name="right",
-                invert=True
+                invert=True  # Right motor inverted
             )
             
             # Initialize actuator

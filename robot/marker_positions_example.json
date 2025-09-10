@@ -1,0 +1,49 @@
+{
+  "positions": [
+    {
+      "marker_id": 0,
+      "name": "Home_Position",
+      "target_x": 320.0,
+      "target_y": 240.0,
+      "target_size": 150.0,
+      "target_distance": 30.0,
+      "tolerance_x": 10.0,
+      "tolerance_y": 10.0,
+      "tolerance_size": 5.0
+    },
+    {
+      "marker_id": 1,
+      "name": "Pickup_Station",
+      "target_x": 320.0,
+      "target_y": 200.0,
+      "target_size": 180.0,
+      "target_distance": 25.0,
+      "tolerance_x": 8.0,
+      "tolerance_y": 8.0,
+      "tolerance_size": 4.0
+    },
+    {
+      "marker_id": 2,
+      "name": "Delivery_Point",
+      "target_x": 320.0,
+      "target_y": 220.0,
+      "target_size": 160.0,
+      "target_distance": 28.0,
+      "tolerance_x": 10.0,
+      "tolerance_y": 10.0,
+      "tolerance_size": 5.0
+    },
+    {
+      "marker_id": 3,
+      "name": "Charging_Station",
+      "target_x": 320.0,
+      "target_y": 240.0,
+      "target_size": 200.0,
+      "target_distance": 20.0,
+      "tolerance_x": 5.0,
+      "tolerance_y": 5.0,
+      "tolerance_size": 3.0
+    }
+  ],
+  "updated": "2024-01-01 12:00:00"
+}

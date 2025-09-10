@@ -55,15 +55,15 @@ class GoForward:
                 logger.info("Duration: Continuous (press Ctrl+C to stop)")
             logger.info("")
             
-            # Initialize motors (both inverted for reverse drive)
-            logger.info("Initializing left motor...")
+            # Initialize motors (both need inversion)
+            logger.info("Initializing left motor (inverted)...")
             self.left_motor = BTS7960Motor(
                 r_en_pin=LEFT_MOTOR_R_EN,
                 l_en_pin=LEFT_MOTOR_L_EN,
                 rpwm_pin=LEFT_MOTOR_RPWM,
                 lpwm_pin=LEFT_MOTOR_LPWM,
                 name="left",
-                invert=False  # Left motor reversed back
+                invert=True  # Left motor inverted
             )
             
             logger.info("Initializing right motor (inverted)...")
@@ -73,7 +73,7 @@ class GoForward:
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
                 name="right",
-                invert=True  # Right motor now inverted
+                invert=True  # Right motor inverted
             )
             
             # Enable motors
@@ -115,14 +115,14 @@ class GoForward:
             logger.info("This test will help verify motor directions are correct")
             logger.info("")
             
-            # Initialize motors (both inverted for reverse drive)
+            # Initialize motors (both need inversion)
             self.left_motor = BTS7960Motor(
                 r_en_pin=LEFT_MOTOR_R_EN,
                 l_en_pin=LEFT_MOTOR_L_EN,
                 rpwm_pin=LEFT_MOTOR_RPWM,
                 lpwm_pin=LEFT_MOTOR_LPWM,
                 name="left",
-                invert=False  # Left motor reversed back
+                invert=True  # Left motor inverted
             )
             
             self.right_motor = BTS7960Motor(
@@ -131,7 +131,7 @@ class GoForward:
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
                 name="right",
-                invert=True  # Right motor now inverted
+                invert=True  # Right motor inverted
             )
             
             # Enable motors
