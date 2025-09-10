@@ -1,6 +1,7 @@
 """Linear actuator control using BTS7960 driver with gpiozero for Raspberry Pi 5 compatibility.
 
-The actuator has a 2-inch stroke length and typical extension/retraction time of ~15 seconds at 50% speed.
+The actuator has a 2-inch stroke length with a full cycle time of ~25 seconds at 50% speed 
+(12.5 seconds to extend, 12.5 seconds to retract).
 """
 
 import logging
