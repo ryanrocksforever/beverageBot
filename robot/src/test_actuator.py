@@ -34,16 +34,16 @@ class ActuatorTest:
         logger.info("\nShutdown signal received, stopping actuator...")
         self._running = False
         
-    def full_extension_test(self, speed: float = 50, extend_time: float = 10, retract_time: float = 10):
-        """Test full extension and retraction of actuator.
+    def full_extension_test(self, speed: float = 50, extend_time: float = 15, retract_time: float = 15):
+        """Test full extension and retraction of actuator (2 inch stroke).
         
         Args:
             speed: Actuator speed percentage (0-100)
-            extend_time: Time to extend in seconds
-            retract_time: Time to retract in seconds
+            extend_time: Time to extend in seconds (default 15s for 2" stroke)
+            retract_time: Time to retract in seconds (default 15s for 2" stroke)
         """
         try:
-            logger.info("=== Actuator Full Extension Test ===")
+            logger.info("=== Actuator Full Extension Test (2 inch stroke) ===")
             logger.info(f"Speed: {speed}%")
             logger.info(f"Extension time: {extend_time}s")
             logger.info(f"Retraction time: {retract_time}s")
@@ -193,7 +193,7 @@ class ActuatorTest:
                 if self._running:
                     logger.info(f"Extending at {speed}%...")
                     self.actuator.extend(speed)
-                    time.sleep(5)
+                    time.sleep(8)  # Increased for 2" stroke
                     
                 # Stop briefly
                 if self._running:
@@ -205,7 +205,7 @@ class ActuatorTest:
                 if self._running:
                     logger.info(f"Retracting at {speed}%...")
                     self.actuator.retract(speed)
-                    time.sleep(5)
+                    time.sleep(8)  # Increased for 2" stroke
                     
                 # Stop briefly
                 if self._running:
@@ -245,10 +245,10 @@ def main():
                         default='full', help='Test mode (default: full)')
     parser.add_argument('--speed', type=float, default=50, 
                         help='Actuator speed percentage (0-100, default: 50)')
-    parser.add_argument('--extend-time', type=float, default=10,
-                        help='Extension time in seconds for full test (default: 10)')
-    parser.add_argument('--retract-time', type=float, default=10,
-                        help='Retraction time in seconds for full test (default: 10)')
+    parser.add_argument('--extend-time', type=float, default=15,
+                        help='Extension time in seconds for full test (default: 15 for 2" stroke)')
+    parser.add_argument('--retract-time', type=float, default=15,
+                        help='Retraction time in seconds for full test (default: 15 for 2" stroke)')
     parser.add_argument('--cycles', type=int, default=3,
                         help='Number of cycles for cycle test (default: 3)')
     

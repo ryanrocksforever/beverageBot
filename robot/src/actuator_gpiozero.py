@@ -1,4 +1,7 @@
-"""Linear actuator control using BTS7960 driver with gpiozero for Raspberry Pi 5 compatibility."""
+"""Linear actuator control using BTS7960 driver with gpiozero for Raspberry Pi 5 compatibility.
+
+The actuator has a 2-inch stroke length and typical extension/retraction time of ~15 seconds at 50% speed.
+"""
 
 import logging
 from .motor_gpiozero import BTS7960Motor
@@ -36,7 +39,7 @@ class LinearActuator:
             percent: Extension power (0-100%). Default 50%.
         """
         percent = abs(percent)  # Ensure positive
-        self._driver.drive(percent)
+        self._driver.drive(-percent)  # Negative for extend (directions were swapped)
         logger.debug(f"Actuator extending at {percent}%")
         
     def retract(self, percent: float = 50.0) -> None:
@@ -46,7 +49,7 @@ class LinearActuator:
             percent: Retraction power (0-100%). Default 50%.
         """
         percent = abs(percent)  # Ensure positive
-        self._driver.drive(-percent)  # Negative for reverse
+        self._driver.drive(percent)  # Positive for retract (directions were swapped)
         logger.debug(f"Actuator retracting at {percent}%")
         
     def stop(self) -> None:

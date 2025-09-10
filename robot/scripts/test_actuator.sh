@@ -8,8 +8,8 @@ cd "$(dirname "$0")/.." || exit 1
 # Default values
 MODE="full"
 SPEED=50
-EXTEND_TIME=10
-RETRACT_TIME=10
+EXTEND_TIME=15  # 15 seconds for 2 inch stroke
+RETRACT_TIME=15  # 15 seconds for 2 inch stroke
 CYCLES=3
 
 # Parse command line arguments
@@ -40,8 +40,8 @@ while [[ $# -gt 0 ]]; do
             echo "Options:"
             echo "  --mode MODE         Test mode: full, cycle, or manual (default: full)"
             echo "  --speed PERCENT     Actuator speed 0-100 (default: 50)"
-            echo "  --extend-time SEC   Extension time for full test (default: 10)"
-            echo "  --retract-time SEC  Retraction time for full test (default: 10)"
+            echo "  --extend-time SEC   Extension time for full test (default: 15 for 2\" stroke)"
+            echo "  --retract-time SEC  Retraction time for full test (default: 15 for 2\" stroke)"
             echo "  --cycles NUM        Number of cycles for cycle test (default: 3)"
             echo ""
             echo "Test modes:"
