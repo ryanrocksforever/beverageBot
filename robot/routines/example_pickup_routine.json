@@ -1,0 +1,84 @@
+{
+  "created": "2024-01-01T00:00:00",
+  "description": "Example routine for picking up an object",
+  "commands": [
+    {
+      "type": "move",
+      "duration": 2.0,
+      "parameters": {
+        "left_speed": 30,
+        "right_speed": 30
+      },
+      "timestamp": 0.0
+    },
+    {
+      "type": "move",
+      "duration": 0.5,
+      "parameters": {
+        "left_speed": 0,
+        "right_speed": 0
+      },
+      "timestamp": 2.0
+    },
+    {
+      "type": "actuator",
+      "duration": 12.0,
+      "parameters": {
+        "action": "extend",
+        "speed": 50
+      },
+      "timestamp": 2.5
+    },
+    {
+      "type": "actuator",
+      "duration": 0.5,
+      "parameters": {
+        "action": "stop",
+        "speed": 0
+      },
+      "timestamp": 14.5
+    },
+    {
+      "type": "wait",
+      "duration": 1.0,
+      "parameters": {},
+      "timestamp": 15.0
+    },
+    {
+      "type": "actuator",
+      "duration": 12.0,
+      "parameters": {
+        "action": "retract",
+        "speed": 50
+      },
+      "timestamp": 16.0
+    },
+    {
+      "type": "actuator",
+      "duration": 0.5,
+      "parameters": {
+        "action": "stop",
+        "speed": 0
+      },
+      "timestamp": 28.0
+    },
+    {
+      "type": "move",
+      "duration": 1.5,
+      "parameters": {
+        "left_speed": -30,
+        "right_speed": -30
+      },
+      "timestamp": 28.5
+    },
+    {
+      "type": "move",
+      "duration": 0.5,
+      "parameters": {
+        "left_speed": 0,
+        "right_speed": 0
+      },
+      "timestamp": 30.0
+    }
+  ]
+}
