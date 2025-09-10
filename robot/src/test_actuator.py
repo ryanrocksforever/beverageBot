@@ -34,13 +34,13 @@ class ActuatorTest:
         logger.info("\nShutdown signal received, stopping actuator...")
         self._running = False
         
-    def full_extension_test(self, speed: float = 50, extend_time: float = 12.5, retract_time: float = 12.5):
+    def full_extension_test(self, speed: float = 50, extend_time: float = 25, retract_time: float = 25):
         """Test full extension and retraction of actuator (2 inch stroke).
         
         Args:
             speed: Actuator speed percentage (0-100)
-            extend_time: Time to extend in seconds (default 12.5s for 2" stroke)
-            retract_time: Time to retract in seconds (default 12.5s for 2" stroke)
+            extend_time: Time to extend in seconds (default 25s for 2" stroke)
+            retract_time: Time to retract in seconds (default 25s for 2" stroke)
         """
         try:
             logger.info("=== Actuator Full Extension Test (2 inch stroke) ===")
@@ -194,7 +194,7 @@ class ActuatorTest:
                 if self._running:
                     logger.info(f"Extending at {speed}%...")
                     self.actuator.extend(speed)
-                    time.sleep(8)  # Increased for 2" stroke
+                    time.sleep(15)  # Partial extension for cycle test
                     
                 # Stop briefly
                 if self._running:
@@ -206,7 +206,7 @@ class ActuatorTest:
                 if self._running:
                     logger.info(f"Retracting at {speed}%...")
                     self.actuator.retract(speed)
-                    time.sleep(8)  # Increased for 2" stroke
+                    time.sleep(15)  # Partial retraction for cycle test
                     
                 # Stop briefly
                 if self._running:
@@ -246,10 +246,10 @@ def main():
                         default='full', help='Test mode (default: full)')
     parser.add_argument('--speed', type=float, default=50, 
                         help='Actuator speed percentage (0-100, default: 50)')
-    parser.add_argument('--extend-time', type=float, default=12.5,
-                        help='Extension time in seconds for full test (default: 12.5s, ~25s full cycle)')
-    parser.add_argument('--retract-time', type=float, default=12.5,
-                        help='Retraction time in seconds for full test (default: 12.5s, ~25s full cycle)')
+    parser.add_argument('--extend-time', type=float, default=25,
+                        help='Extension time in seconds for full test (default: 25s, ~50s full cycle)')
+    parser.add_argument('--retract-time', type=float, default=25,
+                        help='Retraction time in seconds for full test (default: 25s, ~50s full cycle)')
     parser.add_argument('--cycles', type=int, default=3,
                         help='Number of cycles for cycle test (default: 3)')
     
