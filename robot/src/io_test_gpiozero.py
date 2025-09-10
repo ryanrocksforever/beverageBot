@@ -253,13 +253,14 @@ class IOTest:
                 return
                 
             # Test motors
-            logger.info("Initializing left motor...")
+            logger.info("Initializing left motor (inverted)...")
             self.left_motor = BTS7960Motor(
                 r_en_pin=LEFT_MOTOR_R_EN,
                 l_en_pin=LEFT_MOTOR_L_EN,
                 rpwm_pin=LEFT_MOTOR_RPWM,
                 lpwm_pin=LEFT_MOTOR_LPWM,
-                name="left"
+                name="left",
+                invert=True  # Left motor needs direction inverted
             )
             self.test_motor(self.left_motor, "left")
             
@@ -271,7 +272,8 @@ class IOTest:
                     l_en_pin=RIGHT_MOTOR_L_EN,
                     rpwm_pin=RIGHT_MOTOR_RPWM,
                     lpwm_pin=RIGHT_MOTOR_LPWM,
-                    name="right"
+                    name="right",
+                    invert=False  # Right motor direction is correct
                 )
                 self.test_motor(self.right_motor, "right")
             

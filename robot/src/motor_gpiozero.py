@@ -14,7 +14,7 @@ Device.pin_factory = LGPIOFactory()
 class BTS7960Motor:
     """BTS7960 motor driver using gpiozero with hardware PWM support."""
     
-    def __init__(self, r_en_pin: int, l_en_pin: int, rpwm_pin: int, lpwm_pin: int, name: str = "motor"):
+    def __init__(self, r_en_pin: int, l_en_pin: int, rpwm_pin: int, lpwm_pin: int, name: str = "motor", invert: bool = False):
         """Initialize BTS7960 motor driver.
         
         Args:
@@ -23,8 +23,10 @@ class BTS7960Motor:
             rpwm_pin: Right PWM pin number (forward)
             lpwm_pin: Left PWM pin number (reverse)
             name: Motor name for logging
+            invert: If True, inverts the motor direction
         """
         self.name = name
+        self.invert = invert
         
         # Create enable pins as regular outputs
         self.r_en = OutputDevice(r_en_pin)
@@ -79,6 +81,10 @@ class BTS7960Motor:
         # Clamp to valid range
         percent = max(-100.0, min(100.0, percent))
         
+        # Invert direction if needed
+        if self.invert:
+            percent = -percent
+        
         # Convert percentage to PWM value (0.0 to 1.0)
         pwm_value = abs(percent) / 100.0
         
@@ -95,7 +101,7 @@ class BTS7960Motor:
             self.rpwm.value = 0
             self.lpwm.value = pwm_value
             
-        logger.debug(f"{self.name} motor drive: {percent}%")
+        logger.debug(f"{self.name} motor drive: {percent}% (inverted: {self.invert})")
         
     def stop(self) -> None:
         """Stop motor (coast to stop)."""
