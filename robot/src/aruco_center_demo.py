@@ -63,21 +63,21 @@ class MotorController:
         """Initialize physical motors."""
         try:
             self.left_motor = BTS7960Motor(
-                r_en_pin=LEFT_MOTOR_R_EN,
-                l_en_pin=LEFT_MOTOR_L_EN,
-                rpwm_pin=LEFT_MOTOR_RPWM,
-                lpwm_pin=LEFT_MOTOR_LPWM,
-                name="left",
-                invert=False  # Left motor not inverted
-            )
-            
-            self.right_motor = BTS7960Motor(
                 r_en_pin=RIGHT_MOTOR_R_EN,
                 l_en_pin=RIGHT_MOTOR_L_EN,
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
+                name="left",
+                invert=True  # Inverted for correct forward/backward
+            )
+            
+            self.right_motor = BTS7960Motor(
+                r_en_pin=LEFT_MOTOR_R_EN,
+                l_en_pin=LEFT_MOTOR_L_EN,
+                rpwm_pin=LEFT_MOTOR_RPWM,
+                lpwm_pin=LEFT_MOTOR_LPWM,
                 name="right",
-                invert=True  # Right motor inverted
+                invert=False  # Not inverted for correct forward/backward
             )
             
             self.left_motor.enable()

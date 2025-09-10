@@ -252,28 +252,28 @@ class IOTest:
             if not self._running:
                 return
                 
-            # Test motors
-            logger.info("Initializing left motor...")
+            # Test motors (swapped L/R pins to fix turning)
+            logger.info("Initializing left motor (using right pins)...")
             self.left_motor = BTS7960Motor(
-                r_en_pin=LEFT_MOTOR_R_EN,
-                l_en_pin=LEFT_MOTOR_L_EN,
-                rpwm_pin=LEFT_MOTOR_RPWM,
-                lpwm_pin=LEFT_MOTOR_LPWM,
+                r_en_pin=RIGHT_MOTOR_R_EN,
+                l_en_pin=RIGHT_MOTOR_L_EN,
+                rpwm_pin=RIGHT_MOTOR_RPWM,
+                lpwm_pin=RIGHT_MOTOR_LPWM,
                 name="left",
-                invert=False  # Left motor not inverted
+                invert=True  # Inverted for correct forward/backward
             )
             self.test_motor(self.left_motor, "left")
             
             if self._running:
                 time.sleep(1.0)  # Brief pause between tests
-                logger.info("Initializing right motor (inverted)...")
+                logger.info("Initializing right motor (using left pins)...")
                 self.right_motor = BTS7960Motor(
-                    r_en_pin=RIGHT_MOTOR_R_EN,
-                    l_en_pin=RIGHT_MOTOR_L_EN,
-                    rpwm_pin=RIGHT_MOTOR_RPWM,
-                    lpwm_pin=RIGHT_MOTOR_LPWM,
+                    r_en_pin=LEFT_MOTOR_R_EN,
+                    l_en_pin=LEFT_MOTOR_L_EN,
+                    rpwm_pin=LEFT_MOTOR_RPWM,
+                    lpwm_pin=LEFT_MOTOR_LPWM,
                     name="right",
-                    invert=True  # Right motor inverted
+                    invert=False  # Not inverted for correct forward/backward
                 )
                 self.test_motor(self.right_motor, "right")
             

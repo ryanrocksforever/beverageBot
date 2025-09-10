@@ -55,25 +55,25 @@ class GoForward:
                 logger.info("Duration: Continuous (press Ctrl+C to stop)")
             logger.info("")
             
-            # Initialize motors (both inverted to swap forward/backward)
-            logger.info("Initializing left motor...")
+            # Initialize motors (swapped L/R assignments to fix turning)
+            logger.info("Initializing left motor (using right pins)...")
             self.left_motor = BTS7960Motor(
-                r_en_pin=LEFT_MOTOR_R_EN,
-                l_en_pin=LEFT_MOTOR_L_EN,
-                rpwm_pin=LEFT_MOTOR_RPWM,
-                lpwm_pin=LEFT_MOTOR_LPWM,
-                name="left",
-                invert=False  # Left motor not inverted
-            )
-            
-            logger.info("Initializing right motor (inverted)...")
-            self.right_motor = BTS7960Motor(
                 r_en_pin=RIGHT_MOTOR_R_EN,
                 l_en_pin=RIGHT_MOTOR_L_EN,
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
+                name="left",
+                invert=True  # Inverted for correct forward/backward
+            )
+            
+            logger.info("Initializing right motor (using left pins)...")
+            self.right_motor = BTS7960Motor(
+                r_en_pin=LEFT_MOTOR_R_EN,
+                l_en_pin=LEFT_MOTOR_L_EN,
+                rpwm_pin=LEFT_MOTOR_RPWM,
+                lpwm_pin=LEFT_MOTOR_LPWM,
                 name="right",
-                invert=True  # Right motor inverted
+                invert=False  # Not inverted for correct forward/backward
             )
             
             # Enable motors
@@ -115,23 +115,23 @@ class GoForward:
             logger.info("This test will help verify motor directions are correct")
             logger.info("")
             
-            # Initialize motors (both inverted to swap forward/backward)
+            # Initialize motors (swapped L/R assignments to fix turning)
             self.left_motor = BTS7960Motor(
-                r_en_pin=LEFT_MOTOR_R_EN,
-                l_en_pin=LEFT_MOTOR_L_EN,
-                rpwm_pin=LEFT_MOTOR_RPWM,
-                lpwm_pin=LEFT_MOTOR_LPWM,
-                name="left",
-                invert=False  # Left motor not inverted
-            )
-            
-            self.right_motor = BTS7960Motor(
                 r_en_pin=RIGHT_MOTOR_R_EN,
                 l_en_pin=RIGHT_MOTOR_L_EN,
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
+                name="left",
+                invert=True  # Inverted for correct forward/backward
+            )
+            
+            self.right_motor = BTS7960Motor(
+                r_en_pin=LEFT_MOTOR_R_EN,
+                l_en_pin=LEFT_MOTOR_L_EN,
+                rpwm_pin=LEFT_MOTOR_RPWM,
+                lpwm_pin=LEFT_MOTOR_LPWM,
                 name="right",
-                invert=True  # Right motor inverted
+                invert=False  # Not inverted for correct forward/backward
             )
             
             # Enable motors
