@@ -260,7 +260,7 @@ class IOTest:
                 rpwm_pin=LEFT_MOTOR_RPWM,
                 lpwm_pin=LEFT_MOTOR_LPWM,
                 name="left",
-                invert=True  # Left motor needs direction inverted
+                invert=True  # Left motor inverted
             )
             self.test_motor(self.left_motor, "left")
             
@@ -273,7 +273,7 @@ class IOTest:
                     rpwm_pin=RIGHT_MOTOR_RPWM,
                     lpwm_pin=RIGHT_MOTOR_LPWM,
                     name="right",
-                    invert=False  # Right motor direction is correct
+                    invert=False  # Right motor normal direction
                 )
                 self.test_motor(self.right_motor, "right")
             

@@ -55,7 +55,7 @@ class GoForward:
                 logger.info("Duration: Continuous (press Ctrl+C to stop)")
             logger.info("")
             
-            # Initialize motors (both need inversion)
+            # Initialize motors (only left needs inversion)
             logger.info("Initializing left motor (inverted)...")
             self.left_motor = BTS7960Motor(
                 r_en_pin=LEFT_MOTOR_R_EN,
@@ -66,14 +66,14 @@ class GoForward:
                 invert=True  # Left motor inverted
             )
             
-            logger.info("Initializing right motor (inverted)...")
+            logger.info("Initializing right motor...")
             self.right_motor = BTS7960Motor(
                 r_en_pin=RIGHT_MOTOR_R_EN,
                 l_en_pin=RIGHT_MOTOR_L_EN,
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
                 name="right",
-                invert=True  # Right motor inverted
+                invert=False  # Right motor normal direction
             )
             
             # Enable motors
@@ -115,7 +115,7 @@ class GoForward:
             logger.info("This test will help verify motor directions are correct")
             logger.info("")
             
-            # Initialize motors (both need inversion)
+            # Initialize motors (only left needs inversion)
             self.left_motor = BTS7960Motor(
                 r_en_pin=LEFT_MOTOR_R_EN,
                 l_en_pin=LEFT_MOTOR_L_EN,
@@ -131,7 +131,7 @@ class GoForward:
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
                 name="right",
-                invert=True  # Right motor inverted
+                invert=False  # Right motor normal direction
             )
             
             # Enable motors

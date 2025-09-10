@@ -68,7 +68,7 @@ class MotorController:
                 rpwm_pin=LEFT_MOTOR_RPWM,
                 lpwm_pin=LEFT_MOTOR_LPWM,
                 name="left",
-                invert=False
+                invert=True  # Left motor inverted
             )
             
             self.right_motor = BTS7960Motor(
@@ -77,7 +77,7 @@ class MotorController:
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
                 name="right",
-                invert=True
+                invert=False  # Right motor normal direction
             )
             
             self.left_motor.enable()

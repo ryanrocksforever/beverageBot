@@ -47,7 +47,8 @@ class RightMotorTest:
                 l_en_pin=RIGHT_MOTOR_L_EN,
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
-                name="right"
+                name="right",
+                invert=False  # Right motor normal direction
             )
             
             # Enable motor
@@ -129,7 +130,8 @@ class RightMotorTest:
                 l_en_pin=RIGHT_MOTOR_L_EN,
                 rpwm_pin=RIGHT_MOTOR_RPWM,
                 lpwm_pin=RIGHT_MOTOR_LPWM,
-                name="right"
+                name="right",
+                invert=False  # Right motor normal direction
             )
             
             # Enable motor
