@@ -8,7 +8,7 @@ echo "This will generate printable ArUco markers for BevBot locations"
 echo ""
 
 # Check dependencies
-if ! python3 -c "import cv2, reportlab" 2>/dev/null; then
+if ! python -c "import cv2, reportlab" 2>/dev/null; then
     echo "❌ Missing dependencies. Install with:"
     echo "pip3 install opencv-python reportlab"
     exit 1
@@ -26,7 +26,7 @@ echo ""
 
 # Run the marker generator
 export PYTHONPATH="$(pwd):$PYTHONPATH"
-python3 -m src.generate_markers "$@"
+python -m src.generate_markers "$@"
 
 # Check if PDF was generated
 if [ -f "bevbot_markers.pdf" ]; then
