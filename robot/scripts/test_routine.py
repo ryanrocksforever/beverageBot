@@ -10,7 +10,7 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.motor_gpiozero import MotorController
+from src.remote_control_gui import RobotController
 from src.camera import CameraInterface
 from src.aruco_center_demo import ArUcoDetector
 from src.camera_config import MARKER_SIZE_CM
@@ -42,7 +42,7 @@ class RoutineTestSystem:
         logger.info("Initializing routine test system...")
         
         # Initialize hardware
-        self.robot = MotorController()
+        self.robot = RobotController()
         self.camera = CameraInterface()
         self.detector = ArUcoDetector(marker_size_cm=MARKER_SIZE_CM)
         
