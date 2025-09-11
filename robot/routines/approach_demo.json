@@ -1,0 +1,143 @@
+{
+  "name": "Approach Demo",
+  "description": "Demonstrates different marker approaches",
+  "actions": [
+    {
+      "type": "SearchForMarkerAction",
+      "name": "Find marker",
+      "params": {
+        "marker_id": 1,
+        "timeout": 10,
+        "turn_speed": 20
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Front approach",
+      "params": {
+        "goal": {
+          "marker_id": 1,
+          "approach": "front",
+          "distance_cm": 30,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "WaitAction",
+      "name": "Show front position",
+      "params": {
+        "duration": 2
+      }
+    },
+    {
+      "type": "MoveAction",
+      "name": "Back away",
+      "params": {
+        "left_speed": -30,
+        "right_speed": -30,
+        "duration": 1.5
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Left approach",
+      "params": {
+        "goal": {
+          "marker_id": 1,
+          "approach": "left",
+          "distance_cm": 30,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "WaitAction",
+      "name": "Show left position",
+      "params": {
+        "duration": 2
+      }
+    },
+    {
+      "type": "MoveAction",
+      "name": "Back away",
+      "params": {
+        "left_speed": -30,
+        "right_speed": -30,
+        "duration": 1.5
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Right approach",
+      "params": {
+        "goal": {
+          "marker_id": 1,
+          "approach": "right",
+          "distance_cm": 30,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "WaitAction",
+      "name": "Show right position",
+      "params": {
+        "duration": 2
+      }
+    },
+    {
+      "type": "MoveAction",
+      "name": "Back away",
+      "params": {
+        "left_speed": -30,
+        "right_speed": -30,
+        "duration": 1.5
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "45\u00b0 approach",
+      "params": {
+        "goal": {
+          "marker_id": 1,
+          "approach": "custom",
+          "distance_cm": 30,
+          "angle_degrees": 45,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "WaitAction",
+      "name": "Show angled position",
+      "params": {
+        "duration": 2
+      }
+    }
+  ],
+  "subroutines": {}
+}

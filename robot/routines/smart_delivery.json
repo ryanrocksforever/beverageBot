@@ -1,0 +1,132 @@
+{
+  "name": "Smart Delivery",
+  "description": "Delivery with conditional navigation",
+  "actions": [
+    {
+      "type": "SearchForMarkerAction",
+      "name": "Find station",
+      "params": {
+        "marker_id": 0,
+        "timeout": 10,
+        "turn_speed": 20
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Position at station",
+      "params": {
+        "goal": {
+          "marker_id": 0,
+          "approach": "front",
+          "distance_cm": 30,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "ActuatorAction",
+      "name": "Grab item",
+      "params": {
+        "action": "extend",
+        "duration": 2,
+        "speed": 40
+      }
+    },
+    {
+      "type": "WaitAction",
+      "name": "Secure grip",
+      "params": {
+        "duration": 1
+      }
+    },
+    {
+      "type": "ConditionalAction",
+      "name": "Check delivery visibility",
+      "params": {
+        "marker_id": 3,
+        "if_visible": [
+          {
+            "type": "NavigateToMarkerAction",
+            "name": "Direct delivery",
+            "params": {
+              "goal": {
+                "marker_id": 3,
+                "approach": "front",
+                "distance_cm": 25,
+                "angle_degrees": 0.0,
+                "tolerance_cm": 5.0,
+                "tolerance_degrees": 5.0,
+                "timeout": 30.0,
+                "offset_x_cm": 0.0,
+                "offset_y_cm": 0.0,
+                "maintain_orientation": true
+              }
+            }
+          }
+        ],
+        "if_not_visible": [
+          {
+            "type": "TurnAction",
+            "name": "Full rotation search",
+            "params": {
+              "angle_degrees": 360,
+              "speed": 25
+            }
+          },
+          {
+            "type": "SearchForMarkerAction",
+            "name": "Extended search",
+            "params": {
+              "marker_id": 3,
+              "timeout": 15,
+              "turn_speed": 20
+            }
+          },
+          {
+            "type": "NavigateToMarkerAction",
+            "name": "Navigate after search",
+            "params": {
+              "goal": {
+                "marker_id": 3,
+                "approach": "front",
+                "distance_cm": 25,
+                "angle_degrees": 0.0,
+                "tolerance_cm": 5.0,
+                "tolerance_degrees": 5.0,
+                "timeout": 30.0,
+                "offset_x_cm": 0.0,
+                "offset_y_cm": 0.0,
+                "maintain_orientation": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "type": "ActuatorAction",
+      "name": "Release item",
+      "params": {
+        "action": "retract",
+        "duration": 2,
+        "speed": 50
+      }
+    },
+    {
+      "type": "MoveAction",
+      "name": "Back away",
+      "params": {
+        "left_speed": -25,
+        "right_speed": -25,
+        "duration": 1
+      }
+    }
+  ],
+  "subroutines": {}
+}

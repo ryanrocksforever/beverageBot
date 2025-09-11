@@ -1,0 +1,84 @@
+{
+  "name": "Open Fridge",
+  "description": "Opens refrigerator door using actuator",
+  "actions": [
+    {
+      "type": "SearchForMarkerAction",
+      "name": "Find fridge",
+      "params": {
+        "marker_id": 1,
+        "timeout": 15,
+        "turn_speed": 20
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Position at fridge side",
+      "params": {
+        "goal": {
+          "marker_id": 1,
+          "approach": "left",
+          "distance_cm": 25,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "ActuatorAction",
+      "name": "Extend to door handle",
+      "params": {
+        "action": "extend",
+        "duration": 3,
+        "speed": 40
+      }
+    },
+    {
+      "type": "WaitAction",
+      "name": "Stabilize",
+      "params": {
+        "duration": 0.5
+      }
+    },
+    {
+      "type": "MoveAction",
+      "name": "Pull door open",
+      "params": {
+        "left_speed": -30,
+        "right_speed": -25,
+        "duration": 2
+      }
+    },
+    {
+      "type": "ActuatorAction",
+      "name": "Release handle",
+      "params": {
+        "action": "retract",
+        "duration": 2,
+        "speed": 50
+      }
+    },
+    {
+      "type": "WaitAction",
+      "name": "Stabilize",
+      "params": {
+        "duration": 0.5
+      }
+    },
+    {
+      "type": "MoveAction",
+      "name": "Clear doorway",
+      "params": {
+        "left_speed": -30,
+        "right_speed": -30,
+        "duration": 1
+      }
+    }
+  ],
+  "subroutines": {}
+}

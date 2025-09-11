@@ -1,0 +1,152 @@
+{
+  "name": "Patrol",
+  "description": "Continuously patrol between markers",
+  "actions": [
+    {
+      "type": "LoopAction",
+      "name": "Patrol loop",
+      "params": {
+        "actions": [
+          {
+            "type": "SearchForMarkerAction",
+            "name": "Find marker 0",
+            "params": {
+              "marker_id": 0,
+              "timeout": 10,
+              "turn_speed": 20
+            }
+          },
+          {
+            "type": "NavigateToMarkerAction",
+            "name": "Go to marker 0",
+            "params": {
+              "goal": {
+                "marker_id": 0,
+                "approach": "front",
+                "distance_cm": 40,
+                "angle_degrees": 0.0,
+                "tolerance_cm": 5.0,
+                "tolerance_degrees": 5.0,
+                "timeout": 30.0,
+                "offset_x_cm": 0.0,
+                "offset_y_cm": 0.0,
+                "maintain_orientation": true
+              }
+            }
+          },
+          {
+            "type": "WaitAction",
+            "name": "Pause at marker 0",
+            "params": {
+              "duration": 2
+            }
+          },
+          {
+            "type": "SearchForMarkerAction",
+            "name": "Find marker 1",
+            "params": {
+              "marker_id": 1,
+              "timeout": 10,
+              "turn_speed": 20
+            }
+          },
+          {
+            "type": "NavigateToMarkerAction",
+            "name": "Go to marker 1",
+            "params": {
+              "goal": {
+                "marker_id": 1,
+                "approach": "front",
+                "distance_cm": 40,
+                "angle_degrees": 0.0,
+                "tolerance_cm": 5.0,
+                "tolerance_degrees": 5.0,
+                "timeout": 30.0,
+                "offset_x_cm": 0.0,
+                "offset_y_cm": 0.0,
+                "maintain_orientation": true
+              }
+            }
+          },
+          {
+            "type": "WaitAction",
+            "name": "Pause at marker 1",
+            "params": {
+              "duration": 2
+            }
+          },
+          {
+            "type": "SearchForMarkerAction",
+            "name": "Find marker 2",
+            "params": {
+              "marker_id": 2,
+              "timeout": 10,
+              "turn_speed": 20
+            }
+          },
+          {
+            "type": "NavigateToMarkerAction",
+            "name": "Go to marker 2",
+            "params": {
+              "goal": {
+                "marker_id": 2,
+                "approach": "front",
+                "distance_cm": 40,
+                "angle_degrees": 0.0,
+                "tolerance_cm": 5.0,
+                "tolerance_degrees": 5.0,
+                "timeout": 30.0,
+                "offset_x_cm": 0.0,
+                "offset_y_cm": 0.0,
+                "maintain_orientation": true
+              }
+            }
+          },
+          {
+            "type": "WaitAction",
+            "name": "Pause at marker 2",
+            "params": {
+              "duration": 2
+            }
+          },
+          {
+            "type": "SearchForMarkerAction",
+            "name": "Find marker 3",
+            "params": {
+              "marker_id": 3,
+              "timeout": 10,
+              "turn_speed": 20
+            }
+          },
+          {
+            "type": "NavigateToMarkerAction",
+            "name": "Go to marker 3",
+            "params": {
+              "goal": {
+                "marker_id": 3,
+                "approach": "front",
+                "distance_cm": 40,
+                "angle_degrees": 0.0,
+                "tolerance_cm": 5.0,
+                "tolerance_degrees": 5.0,
+                "timeout": 30.0,
+                "offset_x_cm": 0.0,
+                "offset_y_cm": 0.0,
+                "maintain_orientation": true
+              }
+            }
+          },
+          {
+            "type": "WaitAction",
+            "name": "Pause at marker 3",
+            "params": {
+              "duration": 2
+            }
+          }
+        ],
+        "count": -1
+      }
+    }
+  ],
+  "subroutines": {}
+}

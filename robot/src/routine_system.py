@@ -548,6 +548,7 @@ class RoutineBuilder:
     def navigate_to_marker(self, marker_id: int, 
                           distance_cm: float = 30,
                           approach: MarkerApproach = MarkerApproach.FRONT,
+                          name: str = "",
                           **kwargs) -> 'RoutineBuilder':
         """Add marker navigation action."""
         goal = MarkerGoal(
@@ -556,7 +557,7 @@ class RoutineBuilder:
             approach=approach,
             **kwargs
         )
-        self.routine.add_action(NavigateToMarkerAction(goal))
+        self.routine.add_action(NavigateToMarkerAction(goal, name=name))
         return self
     
     def search_for_marker(self, marker_id: int, timeout: float = 10,

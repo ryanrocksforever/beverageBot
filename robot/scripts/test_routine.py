@@ -10,13 +10,37 @@ from pathlib import Path
 # Add parent directory to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.remote_control_gui import RobotController
-from src.camera import CameraInterface
-from src.aruco_center_demo import ArUcoDetector
-from src.camera_config import MARKER_SIZE_CM
+# Setup logging first
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
+
+from src.robot_controller import RobotController
+
+# Try to import camera and ArUco components
+try:
+    from src.camera import CameraInterface
+    from src.aruco_center_demo import ArUcoDetector
+    from src.camera_config import MARKER_SIZE_CM
+    CAMERA_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Camera/ArUco libraries not available: {e}")
+    CAMERA_AVAILABLE = False
+    CameraInterface = None
+    ArUcoDetector = None
+    MARKER_SIZE_CM = 10  # Default value
 from src.routine_system import RoutineContext, RoutineExecutor
 from src.routine_factory import RoutineManager, ActionFactory
-from src.routine_navigator import RoutineNavigator
+
+try:
+    from src.routine_navigator import RoutineNavigator
+    NAVIGATOR_AVAILABLE = True
+except ImportError as e:
+    logger.warning(f"Navigator not available: {e}")
+    NAVIGATOR_AVAILABLE = False
+    RoutineNavigator = None
 from src.routine_examples import (
     create_fridge_open_routine,
     create_beverage_pickup_routine,
@@ -27,13 +51,6 @@ from src.routine_examples import (
     save_all_examples
 )
 
-# Setup logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
-
 class RoutineTestSystem:
     """System for testing and running routines."""
     
@@ -43,18 +60,36 @@ class RoutineTestSystem:
         
         # Initialize hardware
         self.robot = RobotController()
-        self.camera = CameraInterface()
-        self.detector = ArUcoDetector(marker_size_cm=MARKER_SIZE_CM)
         
-        # Check camera
-        if not self.camera.is_available():
-            logger.error("Camera not available!")
-            self.camera = None
-            self.navigator = None
+        # Initialize camera and detector if available
+        self.camera = None
+        self.detector = None
+        self.navigator = None
+        
+        if CAMERA_AVAILABLE and NAVIGATOR_AVAILABLE:
+            try:
+                self.camera = CameraInterface()
+                self.detector = ArUcoDetector(marker_size_cm=MARKER_SIZE_CM)
+                
+                # Check camera
+                if self.camera.is_available():
+                    self.camera.start()
+                    # Create navigator
+                    self.navigator = RoutineNavigator(self.robot, self.camera, self.detector)
+                    logger.info("Camera and navigator initialized")
+                else:
+                    logger.warning("Camera not available")
+                    self.camera = None
+                    self.detector = None
+            except Exception as e:
+                logger.warning(f"Failed to initialize camera/detector: {e}")
+                self.camera = None
+                self.detector = None
         else:
-            self.camera.start()
-            # Create navigator
-            self.navigator = RoutineNavigator(self.robot, self.camera, self.detector)
+            if not CAMERA_AVAILABLE:
+                logger.warning("Camera libraries not available, navigation features disabled")
+            if not NAVIGATOR_AVAILABLE:
+                logger.warning("Navigator not available, ArUco navigation disabled")
         
         # Create routine context
         self.context = RoutineContext(

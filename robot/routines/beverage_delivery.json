@@ -1,0 +1,237 @@
+{
+  "name": "Beverage Delivery",
+  "description": "Complete delivery sequence",
+  "actions": [
+    {
+      "type": "SearchForMarkerAction",
+      "name": "Find home station",
+      "params": {
+        "marker_id": 0,
+        "timeout": 10,
+        "turn_speed": 20
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Position at station",
+      "params": {
+        "goal": {
+          "marker_id": 0,
+          "approach": "front",
+          "distance_cm": 30,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "SearchForMarkerAction",
+      "name": "Find fridge",
+      "params": {
+        "marker_id": 1,
+        "timeout": 20,
+        "turn_speed": 20
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Position at fridge",
+      "params": {
+        "goal": {
+          "marker_id": 1,
+          "approach": "left",
+          "distance_cm": 25,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "ActuatorAction",
+      "name": "Hook door",
+      "params": {
+        "action": "extend",
+        "duration": 3,
+        "speed": 40
+      }
+    },
+    {
+      "type": "MoveAction",
+      "name": "Pull door open",
+      "params": {
+        "left_speed": -30,
+        "right_speed": -25,
+        "duration": 2
+      }
+    },
+    {
+      "type": "ActuatorAction",
+      "name": "Release door",
+      "params": {
+        "action": "retract",
+        "duration": 2,
+        "speed": 50
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Enter fridge area",
+      "params": {
+        "goal": {
+          "marker_id": 1,
+          "approach": "front",
+          "distance_cm": 40,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "SearchForMarkerAction",
+      "name": "Find beverage shelf",
+      "params": {
+        "marker_id": 2,
+        "timeout": 10,
+        "turn_speed": 20
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Approach beverage",
+      "params": {
+        "goal": {
+          "marker_id": 2,
+          "approach": "front",
+          "distance_cm": 15,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "ActuatorAction",
+      "name": "Secure beverage",
+      "params": {
+        "action": "extend",
+        "duration": 2,
+        "speed": 30
+      }
+    },
+    {
+      "type": "WaitAction",
+      "name": "Stabilize grip",
+      "params": {
+        "duration": 1
+      }
+    },
+    {
+      "type": "MoveAction",
+      "name": "Back out with beverage",
+      "params": {
+        "left_speed": -30,
+        "right_speed": -30,
+        "duration": 2
+      }
+    },
+    {
+      "type": "SearchForMarkerAction",
+      "name": "Find delivery location",
+      "params": {
+        "marker_id": 3,
+        "timeout": 20,
+        "turn_speed": 20
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Approach delivery point",
+      "params": {
+        "goal": {
+          "marker_id": 3,
+          "approach": "front",
+          "distance_cm": 25,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    },
+    {
+      "type": "ActuatorAction",
+      "name": "Release beverage",
+      "params": {
+        "action": "retract",
+        "duration": 2,
+        "speed": 50
+      }
+    },
+    {
+      "type": "WaitAction",
+      "name": "Ensure placement",
+      "params": {
+        "duration": 1
+      }
+    },
+    {
+      "type": "MoveAction",
+      "name": "Back away",
+      "params": {
+        "left_speed": -25,
+        "right_speed": -25,
+        "duration": 1
+      }
+    },
+    {
+      "type": "SearchForMarkerAction",
+      "name": "Find home station",
+      "params": {
+        "marker_id": 0,
+        "timeout": 20,
+        "turn_speed": 20
+      }
+    },
+    {
+      "type": "NavigateToMarkerAction",
+      "name": "Return to station",
+      "params": {
+        "goal": {
+          "marker_id": 0,
+          "approach": "front",
+          "distance_cm": 30,
+          "angle_degrees": 0.0,
+          "tolerance_cm": 5.0,
+          "tolerance_degrees": 5.0,
+          "timeout": 30.0,
+          "offset_x_cm": 0.0,
+          "offset_y_cm": 0.0,
+          "maintain_orientation": true
+        }
+      }
+    }
+  ],
+  "subroutines": {}
+}
