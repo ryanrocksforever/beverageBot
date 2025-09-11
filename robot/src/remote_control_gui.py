@@ -313,7 +313,7 @@ class RemoteControlGUI:
         self.camera = None
         self.robot = RobotController()
         self.recorder = RoutineRecorder()
-        self.detector = ArUcoDetector()
+        self.detector = ArUcoDetector(marker_size_cm=10.0)  # 100mm = 10cm markers
         
         # State
         self.running = False

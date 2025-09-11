@@ -132,15 +132,21 @@ class ArUcoDetector:
         self.aruco_dict = cv2.aruco.Dictionary_get(cv2.aruco.DICT_4X4_50)
         self.aruco_params = cv2.aruco.DetectorParameters_create()
         
-        # Camera calibration placeholder (would need actual calibration)
-        # Using approximate values for Raspberry Pi camera
+        # Camera calibration for Innomaker 1080P 130° wide angle camera
+        # Wide angle lens has shorter focal length
+        # For 130° FOV at 1920x1080:
+        # focal_length_pixels ≈ (image_width / 2) / tan(FOV/2)
+        # focal_length_pixels ≈ (1920 / 2) / tan(65°) ≈ 448 pixels
+        # Adjusted for 640x480 capture: 448 * (640/1920) ≈ 149 pixels
         self.camera_matrix = np.array([
-            [600, 0, 320],
-            [0, 600, 240],
+            [149, 0, 320],  # Focal length and principal point x
+            [0, 149, 240],  # Focal length and principal point y
             [0, 0, 1]
         ], dtype=float)
         
-        self.dist_coeffs = np.zeros((4, 1))
+        # Wide angle lens typically has barrel distortion
+        # These are approximate values for a 130° lens
+        self.dist_coeffs = np.array([-0.3, 0.1, 0, 0, 0], dtype=float)
     
     def detect_markers(self, frame: np.ndarray) -> Dict[int, MarkerInfo]:
         """Detect ArUco markers in frame.
@@ -167,9 +173,9 @@ class ArUcoDetector:
                 height = np.linalg.norm(marker_corners[1] - marker_corners[2])
                 size = (width + height) / 2
                 
-                # Estimate distance (rough approximation)
-                # Assuming 10cm marker appears as ~100 pixels at 50cm distance
-                focal_length = 500  # Approximate focal length in pixels
+                # Estimate distance using calibrated focal length
+                # Using the calibrated focal length from camera matrix
+                focal_length = self.camera_matrix[0, 0]  # 149 pixels for wide angle
                 distance = (self.marker_size_cm * focal_length) / size
                 
                 markers[marker_id] = MarkerInfo(
@@ -301,7 +307,7 @@ class ArUcoCenterGUI:
         
         # Components
         self.camera = None
-        self.detector = ArUcoDetector()
+        self.detector = ArUcoDetector(marker_size_cm=10.0)  # 100mm = 10cm markers
         self.controller = CenteringController()
         self.motors = MotorController()
         

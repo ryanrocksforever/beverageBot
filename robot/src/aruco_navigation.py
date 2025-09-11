@@ -22,7 +22,12 @@ except ImportError:
     print("Warning: gpiozero not available, running in simulation mode")
 
 from .camera import CameraInterface
-from .aruco_center_demo import ArUcoDetector, MarkerInfo
+from .aruco_center_demo import MarkerInfo, ArUcoDetector
+from .camera_config import (
+    CAMERA_MATRIX, DISTORTION_COEFFS, MARKER_SIZE_CM,
+    DEFAULT_TARGET_DISTANCE_CM, TOLERANCE_X_PIXELS, 
+    TOLERANCE_Y_PIXELS, TOLERANCE_SIZE_PIXELS
+)
 
 if HARDWARE_AVAILABLE:
     from .pins import (
@@ -173,7 +178,7 @@ class ArUcoNavigator:
         
         # Components
         self.camera = None
-        self.detector = ArUcoDetector()
+        self.detector = ArUcoDetector(marker_size_cm=MARKER_SIZE_CM)  # Use 100mm markers
         self.precision_controller = PrecisionAlignmentController()
         
         # Motors
