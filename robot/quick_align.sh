@@ -6,20 +6,20 @@ echo "=========================="
 
 # Check if running on Pi
 if [ -f /proc/device-tree/model ]; then
-    echo "Running on: $(cat /proc/device-tree/model)"
+    echo "Running on: $(cat /proc/device-tree/model | tr -d '\0')"
 else
     echo "Warning: Not running on Raspberry Pi"
 fi
 
 # Test hardware first
-if [ "$1" == "test" ]; then
+if [ "$1" = "test" ]; then
     echo "Running hardware test..."
     python3 test_hardware_pi5.py
     exit $?
 fi
 
 # Simple alignment test
-if [ "$1" == "simple" ]; then
+if [ "$1" = "simple" ]; then
     echo "Running simple alignment..."
     echo "Usage: python3 src/align_marker_simple.py <marker_id> [options]"
     echo ""
@@ -39,7 +39,7 @@ if [ "$1" == "simple" ]; then
 fi
 
 # GUI mode
-if [ "$1" == "gui" ]; then
+if [ "$1" = "gui" ]; then
     echo "Launching GUI alignment tool..."
     python3 launch_aligner.py
     exit $?
