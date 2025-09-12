@@ -120,7 +120,7 @@ class AlignConfig:
     min_speed: int = 10
     kp_x: float = 0.1
     kp_distance: float = 1.2
-    invert_forward: bool = True  # Set True if robot goes backward when it should go forward
+    invert_forward: bool = False  # Set True if robot goes backward when it should go forward
 
 class SimpleAligner:
     """Simplified aligner for Pi 5."""
@@ -154,13 +154,14 @@ class SimpleAligner:
         if HARDWARE_AVAILABLE:
             try:
                 # Note: RIGHT_MOTOR pins actually control left motor (pins are swapped)
+                # BOTH motors need to be inverted for correct forward direction
                 self.left_motor = BTS7960Motor(
                     r_en_pin=RIGHT_MOTOR_R_EN,
                     l_en_pin=RIGHT_MOTOR_L_EN,
                     rpwm_pin=RIGHT_MOTOR_RPWM,
                     lpwm_pin=RIGHT_MOTOR_LPWM,
                     name="left",
-                    invert=True  # Inverted for correct forward/backward
+                    invert=False  # Changed: was True, now False to fix backward movement
                 )
                 
                 self.right_motor = BTS7960Motor(
@@ -169,7 +170,7 @@ class SimpleAligner:
                     rpwm_pin=LEFT_MOTOR_RPWM,
                     lpwm_pin=LEFT_MOTOR_LPWM,
                     name="right",
-                    invert=False  # Not inverted for correct forward/backward
+                    invert=True  # Changed: was False, now True to fix backward movement
                 )
                 
                 self.left_motor.enable()
@@ -278,10 +279,14 @@ class SimpleAligner:
             turn = self.config.kp_x * x_error
             forward = self.config.kp_distance * distance_error
             
-            # Invert forward direction if needed (when robot goes backward instead of forward)
+            # Apply forward/backward inversion if still needed after motor fix
             if self.config.invert_forward:
                 forward = -forward
             
+            # Calculate motor speeds
+            # Forward: both motors positive
+            # Turn right: left faster than right
+            # Turn left: right faster than left
             left = forward - turn
             right = forward + turn
             

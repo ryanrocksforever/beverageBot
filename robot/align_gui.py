@@ -207,8 +207,8 @@ class AlignmentGUI:
         direction_frame = ttk.LabelFrame(settings_frame, text="Direction")
         direction_frame.pack(fill='x', pady=(0, 10))
         
-        self.invert_forward_var = tk.BooleanVar(value=True)
-        ttk.Checkbutton(direction_frame, text="Invert Forward (check if robot goes backward)",
+        self.invert_forward_var = tk.BooleanVar(value=False)
+        ttk.Checkbutton(direction_frame, text="Invert Forward (check if robot STILL goes backward)",
                        variable=self.invert_forward_var).pack(padx=5, pady=5)
         
         # PID gains
