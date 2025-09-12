@@ -1,0 +1,22 @@
+{
+  "markers": {
+    "1": {
+      "id": 1,
+      "name": "Fridge Door",
+      "location": "Kitchen - Front",
+      "default_distance_cm": 30
+    },
+    "2": {
+      "id": 2,
+      "name": "Inside Fridge",
+      "location": "Kitchen - Inside",
+      "default_distance_cm": 20
+    },
+    "3": {
+      "id": 3,
+      "name": "Couch",
+      "location": "Living Room",
+      "default_distance_cm": 50
+    }
+  }
+}
