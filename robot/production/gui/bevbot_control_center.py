@@ -24,8 +24,9 @@ import sys
 from pathlib import Path
 
 # Add parent directories to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
-sys.path.insert(0, str(Path(__file__).parent.parent / 'core'))
+root_dir = Path(__file__).parent.parent.parent.absolute()
+src_dir = root_dir / 'src'
+sys.path.insert(0, str(src_dir))
 
 # Configure logging
 logging.basicConfig(
@@ -35,11 +36,15 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Import core modules
+VISION_AVAILABLE = False
+HARDWARE_AVAILABLE = False
+
 try:
     from camera import CameraInterface
     from aruco_center_demo import ArUcoDetector, MarkerInfo
     from aruco_navigation import ArUcoNavigator
     VISION_AVAILABLE = True
+    logger.info("Vision modules loaded successfully")
 except ImportError as e:
     logger.warning(f"Vision modules not available: {e}")
     VISION_AVAILABLE = False
@@ -56,9 +61,10 @@ try:
         ACTUATOR_R_EN, ACTUATOR_L_EN, ACTUATOR_RPWM, ACTUATOR_LPWM
     )
     HARDWARE_AVAILABLE = True
-except ImportError:
+    logger.info("Hardware modules loaded successfully")
+except ImportError as e:
     HARDWARE_AVAILABLE = False
-    logger.info("Hardware modules not available - running in simulation mode")
+    logger.info(f"Hardware modules not available - running in simulation mode: {e}")
 
 class ActionType(Enum):
     """Enhanced action types for routines."""
