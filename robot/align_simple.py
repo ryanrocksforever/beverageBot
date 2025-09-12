@@ -120,6 +120,7 @@ class AlignConfig:
     min_speed: int = 10
     kp_x: float = 0.1
     kp_distance: float = 1.2
+    invert_forward: bool = True  # Set True if robot goes backward when it should go forward
 
 class SimpleAligner:
     """Simplified aligner for Pi 5."""
@@ -149,16 +150,17 @@ class SimpleAligner:
             print(f"[ERROR] Camera init failed: {e}")
             return False
         
-        # Motors
+        # Motors - matching remote_control_gui.py configuration
         if HARDWARE_AVAILABLE:
             try:
+                # Note: RIGHT_MOTOR pins actually control left motor (pins are swapped)
                 self.left_motor = BTS7960Motor(
                     r_en_pin=RIGHT_MOTOR_R_EN,
                     l_en_pin=RIGHT_MOTOR_L_EN,
                     rpwm_pin=RIGHT_MOTOR_RPWM,
                     lpwm_pin=RIGHT_MOTOR_LPWM,
                     name="left",
-                    invert=True
+                    invert=True  # Inverted for correct forward/backward
                 )
                 
                 self.right_motor = BTS7960Motor(
@@ -167,7 +169,7 @@ class SimpleAligner:
                     rpwm_pin=LEFT_MOTOR_RPWM,
                     lpwm_pin=LEFT_MOTOR_LPWM,
                     name="right",
-                    invert=False
+                    invert=False  # Not inverted for correct forward/backward
                 )
                 
                 self.left_motor.enable()
@@ -253,8 +255,11 @@ class SimpleAligner:
             
             # Calculate errors
             target_x = self.config.target_x_ratio * frame_width
-            x_error = target_x - marker['center'][0]
-            distance_error = self.config.target_distance_cm - marker['distance']
+            x_error = target_x - marker['center'][0]  # Positive = marker is left of target
+            
+            # Distance error: positive when too far, negative when too close
+            # We want to move forward (positive speed) when too far
+            distance_error = marker['distance'] - self.config.target_distance_cm
             
             # Check if aligned
             if (abs(x_error) <= self.config.tolerance_x_pixels and
@@ -272,6 +277,10 @@ class SimpleAligner:
             # Simple P control
             turn = self.config.kp_x * x_error
             forward = self.config.kp_distance * distance_error
+            
+            # Invert forward direction if needed (when robot goes backward instead of forward)
+            if self.config.invert_forward:
+                forward = -forward
             
             left = forward - turn
             right = forward + turn

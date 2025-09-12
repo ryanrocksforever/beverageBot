@@ -203,6 +203,14 @@ class AlignmentGUI:
                  orient='horizontal', length=150).grid(row=1, column=1, padx=5, pady=5)
         ttk.Label(speed_frame, textvariable=self.search_speed_var).grid(row=1, column=2)
         
+        # Direction settings
+        direction_frame = ttk.LabelFrame(settings_frame, text="Direction")
+        direction_frame.pack(fill='x', pady=(0, 10))
+        
+        self.invert_forward_var = tk.BooleanVar(value=True)
+        ttk.Checkbutton(direction_frame, text="Invert Forward (check if robot goes backward)",
+                       variable=self.invert_forward_var).pack(padx=5, pady=5)
+        
         # PID gains
         pid_frame = ttk.LabelFrame(settings_frame, text="PID Gains")
         pid_frame.pack(fill='x', pady=(0, 10))
@@ -431,6 +439,7 @@ class AlignmentGUI:
         self.config.search_speed = self.search_speed_var.get()
         self.config.kp_x = self.kp_x_var.get()
         self.config.kp_distance = self.kp_dist_var.get()
+        self.config.invert_forward = self.invert_forward_var.get()
         
         if self.aligner:
             self.aligner.config = self.config
