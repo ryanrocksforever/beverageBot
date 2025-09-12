@@ -2,13 +2,21 @@
 """
 Launch script for ArUco Precision Alignment Tool
 Dedicated tool for precise marker alignment
+Optimized for Raspberry Pi 5
 """
 
 import sys
 import os
+import platform
 
 # Add the src directory to Python path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+script_dir = os.path.dirname(os.path.abspath(__file__))
+src_dir = os.path.join(script_dir, 'src')
+sys.path.insert(0, src_dir)
+
+# Detect platform
+is_pi = platform.machine().startswith('aarch64') or platform.machine().startswith('armv')
+print(f"Platform: {platform.machine()} {'(Raspberry Pi)' if is_pi else ''}")
 
 print("ArUco Precision Alignment Tool")
 print("=" * 40)
@@ -60,8 +68,15 @@ except ImportError:
 print(f"\nMode: {mode}")
 print("-" * 40)
 
-# Import the aligner
-from aruco_precision_aligner import main, AlignmentGUI, RobustAligner
+# Import the aligner modules
+try:
+    from aruco_precision_aligner import AlignmentGUI, RobustAligner
+    print("[OK] Alignment modules loaded")
+except ImportError as e:
+    print(f"[ERROR] Failed to import alignment modules: {e}")
+    print(f"Python path: {sys.path}")
+    print(f"Source directory contents: {os.listdir(src_dir) if os.path.exists(src_dir) else 'Not found'}")
+    sys.exit(1)
 
 def launch_gui():
     """Launch the alignment GUI."""
@@ -81,7 +96,7 @@ def launch_gui():
     app = AlignmentGUI(root)
     root.mainloop()
 
-def launch_cli():
+def launch_cli(argv=None):
     """Launch command line interface."""
     import argparse
     
@@ -90,10 +105,18 @@ def launch_cli():
     parser.add_argument('--distance', type=float, default=30.0, help='Target distance (cm)')
     parser.add_argument('--save', type=int, help='Save current position for marker ID')
     parser.add_argument('--list', action='store_true', help='List saved positions')
+    parser.add_argument('--test', action='store_true', help='Test hardware components')
     
-    args = parser.parse_args()
+    args = parser.parse_args(argv)
     
-    if args.list:
+    if args.test:
+        # Run hardware test
+        print("\nRunning hardware diagnostics...")
+        print("-" * 40)
+        os.system(f"{sys.executable} {os.path.join(script_dir, 'test_hardware_pi5.py')}")
+        return 0
+        
+    elif args.list:
         # List saved positions
         import json
         try:
