@@ -45,15 +45,26 @@ if [ "$1" = "gui" ]; then
     exit $?
 fi
 
+# New simple GUI
+if [ "$1" = "simplegui" ]; then
+    echo "Launching Simple Alignment GUI..."
+    python3 align_gui.py
+    exit $?
+fi
+
 # Default - show options
 echo ""
 echo "Usage: ./quick_align.sh [command]"
 echo ""
 echo "Commands:"
-echo "  test    - Run hardware diagnostics"
-echo "  simple  - Run simple command-line alignment"
-echo "  gui     - Launch GUI alignment tool"
+echo "  test       - Run hardware diagnostics"
+echo "  simple     - Run simple command-line alignment"
+echo "  gui        - Launch full GUI alignment tool (complex)"
+echo "  simplegui  - Launch simple GUI (recommended)"
 echo ""
 echo "Quick test:"
-echo "  ./quick_align.sh simple 1 -d 30"
+echo "  ./quick_align.sh simplegui"
+echo ""
+echo "Or directly:"
+echo "  python3 align_gui.py"
 echo ""
