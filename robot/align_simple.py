@@ -153,15 +153,14 @@ class SimpleAligner:
         # Motors - matching remote_control_gui.py configuration
         if HARDWARE_AVAILABLE:
             try:
-                # Note: RIGHT_MOTOR pins actually control left motor (pins are swapped)
-                # BOTH motors need to be inverted for correct forward direction
+                # EXACT configuration from working remote_control_gui.py
                 self.left_motor = BTS7960Motor(
                     r_en_pin=RIGHT_MOTOR_R_EN,
                     l_en_pin=RIGHT_MOTOR_L_EN,
                     rpwm_pin=RIGHT_MOTOR_RPWM,
                     lpwm_pin=RIGHT_MOTOR_LPWM,
                     name="left",
-                    invert=False  # Changed: was True, now False to fix backward movement
+                    invert=True  # Same as remote_control_gui.py
                 )
                 
                 self.right_motor = BTS7960Motor(
@@ -170,7 +169,7 @@ class SimpleAligner:
                     rpwm_pin=LEFT_MOTOR_RPWM,
                     lpwm_pin=LEFT_MOTOR_LPWM,
                     name="right",
-                    invert=True  # Changed: was False, now True to fix backward movement
+                    invert=False  # Same as remote_control_gui.py
                 )
                 
                 self.left_motor.enable()
