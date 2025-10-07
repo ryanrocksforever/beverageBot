@@ -1,0 +1,10 @@
+# Additional requirements for AI Vision features
+# Install with: pip install -r requirements_ai.txt
+
+# HTTP requests for OpenAI API
+requests>=2.31.0
+
+# Already in main requirements but listed for completeness
+opencv-python>=4.8.0
+numpy>=1.24.0
+Pillow>=10.0.0

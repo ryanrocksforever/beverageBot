@@ -30,6 +30,13 @@ except ImportError:
 from .camera import CameraInterface
 from .aruco_center_demo import ArUcoDetector, MarkerInfo
 
+try:
+    from .openai_vision import OpenAIVision, VisionNavigator
+    AI_AVAILABLE = True
+except ImportError as e:
+    AI_AVAILABLE = False
+    print(f"Warning: OpenAI Vision not available: {e}")
+
 if HARDWARE_AVAILABLE:
     from .pins import (
         LEFT_MOTOR_R_EN, LEFT_MOTOR_L_EN, LEFT_MOTOR_RPWM, LEFT_MOTOR_LPWM,
@@ -321,6 +328,19 @@ class RemoteControlGUI:
         self.target_marker_id = None
         self.current_frame = None
         self.frame_queue = Queue(maxsize=2)
+
+        # AI Vision components
+        self.vision_ai = None
+        self.vision_navigator = None
+        self.ai_running = False
+        self.ai_output_queue = Queue(maxsize=100)
+        if AI_AVAILABLE:
+            try:
+                self.vision_ai = OpenAIVision()
+                logger.info("OpenAI Vision initialized")
+            except Exception as e:
+                logger.warning(f"Failed to initialize OpenAI Vision: {e}")
+                AI_AVAILABLE = False
         
         # Control state
         self.motor_speed = 30
@@ -363,6 +383,12 @@ class RemoteControlGUI:
         self.tracking_tab = ttk.Frame(self.notebook)
         self.notebook.add(self.tracking_tab, text="ArUco Tracking")
         self._setup_tracking_tab()
+
+        # Tab 4: AI Vision (if available)
+        if AI_AVAILABLE and self.vision_ai:
+            self.ai_tab = ttk.Frame(self.notebook)
+            self.notebook.add(self.ai_tab, text="AI Vision")
+            self._setup_ai_tab()
     
     def _setup_control_tab(self):
         """Setup manual control tab."""
@@ -601,6 +627,115 @@ class RemoteControlGUI:
         ttk.Scale(param_frame, from_=10, to=100, variable=self.max_track_speed_var,
                  orient='horizontal', length=150).grid(row=0, column=3, padx=5)
     
+    def _setup_ai_tab(self):
+        """Setup AI Vision tab with controls and output display."""
+        main_frame = ttk.Frame(self.ai_tab, padding="10")
+        main_frame.pack(fill='both', expand=True)
+
+        # AI Control buttons
+        control_frame = ttk.LabelFrame(main_frame, text="AI Vision Controls", padding="10")
+        control_frame.pack(fill='x', pady=5)
+
+        # 360-degree scan button
+        self.scan_btn = ttk.Button(
+            control_frame,
+            text="🔍 360° Surroundings Scan",
+            command=self.start_surroundings_scan,
+            width=25
+        )
+        self.scan_btn.grid(row=0, column=0, padx=5, pady=5)
+
+        scan_info = ttk.Label(
+            control_frame,
+            text="Rotate 360° and analyze surroundings with GPT-4o mini",
+            font=('TkDefaultFont', 9)
+        )
+        scan_info.grid(row=0, column=1, padx=5, pady=5, sticky='w')
+
+        # Navigate to human button
+        self.navigate_human_btn = ttk.Button(
+            control_frame,
+            text="🚶 Navigate to Closest Human",
+            command=self.start_human_navigation,
+            width=25
+        )
+        self.navigate_human_btn.grid(row=1, column=0, padx=5, pady=5)
+
+        nav_info = ttk.Label(
+            control_frame,
+            text="Use AI to find and navigate to the nearest human",
+            font=('TkDefaultFont', 9)
+        )
+        nav_info.grid(row=1, column=1, padx=5, pady=5, sticky='w')
+
+        # Stop AI button
+        self.stop_ai_btn = ttk.Button(
+            control_frame,
+            text="⛔ Stop AI Operation",
+            command=self.stop_ai_operation,
+            state='disabled',
+            width=25
+        )
+        self.stop_ai_btn.grid(row=2, column=0, padx=5, pady=5)
+
+        # Status indicator
+        self.ai_status_var = tk.StringVar(value="AI Status: Ready")
+        status_label = ttk.Label(control_frame, textvariable=self.ai_status_var,
+                                font=('TkDefaultFont', 10, 'bold'))
+        status_label.grid(row=3, column=0, columnspan=2, pady=10)
+
+        # AI Thinking/Output Display
+        output_frame = ttk.LabelFrame(main_frame, text="AI Thinking Process & Output", padding="10")
+        output_frame.pack(fill='both', expand=True, pady=5)
+
+        # Create text widget with scrollbar
+        text_frame = ttk.Frame(output_frame)
+        text_frame.pack(fill='both', expand=True)
+
+        self.ai_output_text = tk.Text(
+            text_frame,
+            height=20,
+            width=80,
+            wrap=tk.WORD,
+            font=('Courier', 10),
+            bg='black',
+            fg='lime',
+            insertbackground='lime'
+        )
+        self.ai_output_text.pack(side='left', fill='both', expand=True)
+
+        # Configure text tags for different message types
+        self.ai_output_text.tag_config('info', foreground='cyan')
+        self.ai_output_text.tag_config('warning', foreground='yellow')
+        self.ai_output_text.tag_config('error', foreground='red')
+        self.ai_output_text.tag_config('success', foreground='lime')
+        self.ai_output_text.tag_config('ai_response', foreground='white', font=('Courier', 10, 'bold'))
+        self.ai_output_text.tag_config('action', foreground='magenta')
+
+        scrollbar = ttk.Scrollbar(text_frame, orient='vertical',
+                                 command=self.ai_output_text.yview)
+        scrollbar.pack(side='right', fill='y')
+        self.ai_output_text.config(yscrollcommand=scrollbar.set)
+
+        # Clear output button
+        clear_btn = ttk.Button(output_frame, text="Clear Output",
+                              command=self.clear_ai_output)
+        clear_btn.pack(pady=5)
+
+        # Current Analysis Display
+        analysis_frame = ttk.LabelFrame(main_frame, text="Current Analysis", padding="10")
+        analysis_frame.pack(fill='x', pady=5)
+
+        self.analysis_display = tk.Text(
+            analysis_frame,
+            height=8,
+            width=80,
+            wrap=tk.WORD,
+            font=('TkDefaultFont', 9),
+            state='disabled'
+        )
+        self.analysis_display.pack(fill='x')
+
     def _bind_movement_button(self, button, command):
         """Bind press/release events for movement button."""
         def on_press(event):
@@ -936,11 +1071,247 @@ class RemoteControlGUI:
             self.target_marker_id = int(selection)
         self._update_status(f"Target marker: {selection}")
     
+    def start_surroundings_scan(self):
+        """Start 360-degree surroundings scan with AI analysis."""
+        if not self.vision_ai:
+            messagebox.showerror("AI Not Available", "OpenAI Vision is not configured. Please set OPENAI_API_KEY.")
+            return
+
+        self.ai_running = True
+        self.scan_btn.config(state='disabled')
+        self.navigate_human_btn.config(state='disabled')
+        self.stop_ai_btn.config(state='normal')
+        self.ai_status_var.set("AI Status: Performing 360° scan...")
+
+        # Clear previous output
+        self.clear_ai_output()
+        self.log_ai_output("Starting 360-degree surroundings scan...", 'info')
+
+        # Run scan in separate thread
+        scan_thread = threading.Thread(target=self._surroundings_scan_worker, daemon=True)
+        scan_thread.start()
+
+    def _surroundings_scan_worker(self):
+        """Worker thread for surroundings scan."""
+        try:
+            # Initialize navigator if needed
+            if not self.vision_navigator:
+                self.vision_navigator = VisionNavigator(self.robot, self.camera, self.vision_ai)
+
+            self.log_ai_output("Rotating robot and capturing images...", 'info')
+
+            # Perform the scan
+            num_images = 8
+            for i in range(num_images):
+                self.log_ai_output(f"Capturing image {i+1}/{num_images}...", 'info')
+                time.sleep(0.5)  # Small delay for UI update
+
+            results = self.vision_navigator.scan_surroundings(num_images=num_images)
+
+            # Log the results
+            self.log_ai_output("\n=== AI ANALYSIS COMPLETE ===", 'success')
+            self.log_ai_output("\nEnvironment Description:", 'info')
+            self.log_ai_output(results.get('environment_description', 'No description'), 'ai_response')
+
+            if results.get('objects'):
+                self.log_ai_output("\nDetected Objects:", 'info')
+                for obj in results.get('objects', []):
+                    self.log_ai_output(f"  • {obj}", 'ai_response')
+
+            if results.get('obstacles'):
+                self.log_ai_output("\nObstacles:", 'warning')
+                for obs in results.get('obstacles', []):
+                    self.log_ai_output(f"  ⚠ {obs}", 'warning')
+
+            if results.get('humans_detected'):
+                self.log_ai_output("\nHumans Detected:", 'success')
+                for pos in results.get('human_positions', []):
+                    self.log_ai_output(f"  👤 {pos}", 'ai_response')
+
+            if results.get('navigation_suggestions'):
+                self.log_ai_output("\nNavigation Suggestions:", 'info')
+                self.log_ai_output(results.get('navigation_suggestions', ''), 'ai_response')
+
+            # Update analysis display
+            self.update_analysis_display(results)
+
+        except Exception as e:
+            self.log_ai_output(f"Error during scan: {str(e)}", 'error')
+            logger.error(f"Surroundings scan error: {e}")
+
+        finally:
+            self.ai_running = False
+            self.scan_btn.config(state='normal')
+            self.navigate_human_btn.config(state='normal')
+            self.stop_ai_btn.config(state='disabled')
+            self.ai_status_var.set("AI Status: Ready")
+
+    def start_human_navigation(self):
+        """Start AI-powered navigation to find closest human."""
+        if not self.vision_ai:
+            messagebox.showerror("AI Not Available", "OpenAI Vision is not configured. Please set OPENAI_API_KEY.")
+            return
+
+        self.ai_running = True
+        self.scan_btn.config(state='disabled')
+        self.navigate_human_btn.config(state='disabled')
+        self.stop_ai_btn.config(state='normal')
+        self.ai_status_var.set("AI Status: Searching for humans...")
+
+        # Clear previous output
+        self.clear_ai_output()
+        self.log_ai_output("Starting AI navigation to find closest human...", 'info')
+
+        # Run navigation in separate thread
+        nav_thread = threading.Thread(target=self._human_navigation_worker, daemon=True)
+        nav_thread.start()
+
+    def _human_navigation_worker(self):
+        """Worker thread for human navigation."""
+        try:
+            # Initialize navigator if needed
+            if not self.vision_navigator:
+                self.vision_navigator = VisionNavigator(self.robot, self.camera, self.vision_ai)
+
+            self.log_ai_output("AI is analyzing camera feed to find humans...", 'info')
+
+            # Navigation loop
+            max_iterations = 60  # 30 seconds at 0.5s per iteration
+            for i in range(max_iterations):
+                if not self.ai_running:
+                    self.log_ai_output("Navigation stopped by user", 'warning')
+                    break
+
+                # Capture and analyze frame
+                frame, _ = self.camera.capture_frame()
+                if frame is None:
+                    continue
+
+                # Get AI analysis
+                analysis = self.vision_ai.find_human(frame)
+
+                # Log AI thinking
+                self.log_ai_output(f"\n[Iteration {i+1}]", 'info')
+
+                if analysis.human_detected:
+                    self.log_ai_output(f"✓ Human detected: {analysis.human_direction} at {analysis.human_distance} distance", 'success')
+                    self.log_ai_output(f"Confidence: {analysis.confidence:.1%}", 'info')
+                    self.log_ai_output(f"AI Decision: {analysis.recommended_action}", 'action')
+
+                    # Execute action
+                    action = analysis.recommended_action
+                    if action == 'forward' or action == 'approach_slowly':
+                        speed = 20 if action == 'approach_slowly' else 30
+                        self.log_ai_output(f"Moving forward at {speed}% speed", 'action')
+                        if analysis.human_distance == 'close':
+                            self.log_ai_output("Human very close - stopping!", 'success')
+                            self.robot.stop_motors()
+                            break
+                        self.robot.move_forward(speed)
+                    elif action == 'turn_left':
+                        self.log_ai_output("Turning left to center on human", 'action')
+                        self.robot.turn_left(25)
+                    elif action == 'turn_right':
+                        self.log_ai_output("Turning right to center on human", 'action')
+                        self.robot.turn_right(25)
+                    elif action == 'stop':
+                        self.log_ai_output("Stopping - target reached or obstacle detected", 'warning')
+                        self.robot.stop_motors()
+                        if analysis.human_distance == 'close':
+                            break
+
+                    time.sleep(0.5)
+                    self.robot.stop_motors()
+
+                else:
+                    self.log_ai_output("No human detected - searching...", 'info')
+                    # Search by rotating
+                    self.log_ai_output("Rotating to search for humans", 'action')
+                    self.robot.turn_right(25)
+                    time.sleep(0.3)
+                    self.robot.stop_motors()
+
+                # Update analysis display
+                self.update_analysis_display({
+                    'human_detected': analysis.human_detected,
+                    'direction': analysis.human_direction,
+                    'distance': analysis.human_distance,
+                    'confidence': analysis.confidence,
+                    'reasoning': analysis.description
+                })
+
+                time.sleep(0.1)
+
+            self.log_ai_output("\n=== Navigation Complete ===", 'success')
+
+        except Exception as e:
+            self.log_ai_output(f"Error during navigation: {str(e)}", 'error')
+            logger.error(f"Human navigation error: {e}")
+
+        finally:
+            self.robot.stop_motors()
+            self.ai_running = False
+            self.scan_btn.config(state='normal')
+            self.navigate_human_btn.config(state='normal')
+            self.stop_ai_btn.config(state='disabled')
+            self.ai_status_var.set("AI Status: Ready")
+
+    def stop_ai_operation(self):
+        """Stop current AI operation."""
+        self.ai_running = False
+        if self.vision_navigator:
+            self.vision_navigator.stop()
+        self.robot.stop_motors()
+        self.log_ai_output("\nAI operation stopped by user", 'warning')
+        self.ai_status_var.set("AI Status: Stopped")
+
+    def log_ai_output(self, message: str, tag: str = None):
+        """Log message to AI output display."""
+        def update():
+            self.ai_output_text.insert(tk.END, message + '\n', tag)
+            self.ai_output_text.see(tk.END)
+
+        # Schedule GUI update in main thread
+        self.root.after(0, update)
+
+    def clear_ai_output(self):
+        """Clear AI output display."""
+        self.ai_output_text.delete('1.0', tk.END)
+
+    def update_analysis_display(self, analysis: Dict):
+        """Update the analysis display with formatted results."""
+        def update():
+            self.analysis_display.config(state='normal')
+            self.analysis_display.delete('1.0', tk.END)
+
+            # Format the analysis nicely
+            text = "=== Current Analysis ===\n\n"
+            for key, value in analysis.items():
+                if key != 'raw_response':  # Skip raw response
+                    if isinstance(value, list):
+                        text += f"{key.replace('_', ' ').title()}:\n"
+                        for item in value:
+                            text += f"  • {item}\n"
+                    elif isinstance(value, bool):
+                        text += f"{key.replace('_', ' ').title()}: {'Yes' if value else 'No'}\n"
+                    elif isinstance(value, float):
+                        text += f"{key.replace('_', ' ').title()}: {value:.2f}\n"
+                    else:
+                        text += f"{key.replace('_', ' ').title()}: {value}\n"
+
+            self.analysis_display.insert('1.0', text)
+            self.analysis_display.config(state='disabled')
+
+        self.root.after(0, update)
+
     def on_closing(self):
         """Handle window closing."""
         logger.info("Shutting down...")
         self.running = False
         self.tracking_marker = False
+        self.ai_running = False
+        if self.vision_navigator:
+            self.vision_navigator.stop()
         self.recorder.stop_playback()
         self.robot.cleanup()
         if self.camera:

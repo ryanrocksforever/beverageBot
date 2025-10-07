@@ -1,0 +1,18 @@
+{
+  "api_key": "sk-your-openai-api-key-here",
+  "model": "gpt-4o-mini",
+  "max_tokens": 500,
+  "temperature": 0.3,
+  "scan_settings": {
+    "num_images": 8,
+    "rotation_speed": 30,
+    "image_detail": "low"
+  },
+  "navigation_settings": {
+    "max_duration": 30,
+    "action_cooldown": 0.5,
+    "search_rotation_speed": 25,
+    "approach_speed": 20,
+    "normal_speed": 30
+  }
+}

@@ -1,0 +1,5 @@
+# OpenAI configuration file with API key
+openai_config.json
+
+# Keep the example file
+!openai_config.json.example
