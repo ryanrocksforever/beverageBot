@@ -104,7 +104,7 @@ def main():
 
     # Test image encoding
     test_image = test_image_encoding(vision)
-    if not test_image:
+    if test_image is None:
         print("\n❌ Image encoding failed")
         return 1
 

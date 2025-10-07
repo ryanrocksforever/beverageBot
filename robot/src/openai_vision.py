@@ -9,9 +9,13 @@ from typing import List, Dict, Any, Optional, Tuple
 from dataclasses import dataclass
 import cv2
 import numpy as np
-import requests
 from io import BytesIO
 import time
+
+try:
+    import requests
+except ImportError:
+    raise ImportError("requests library is required for OpenAI Vision. Install with: pip install requests")
 
 logger = logging.getLogger(__name__)
 

@@ -30,6 +30,8 @@ except ImportError:
 from .camera import CameraInterface
 from .aruco_center_demo import ArUcoDetector, MarkerInfo
 
+# Initialize AI_AVAILABLE as global
+AI_AVAILABLE = False
 try:
     from .openai_vision import OpenAIVision, VisionNavigator
     AI_AVAILABLE = True
@@ -334,13 +336,14 @@ class RemoteControlGUI:
         self.vision_navigator = None
         self.ai_running = False
         self.ai_output_queue = Queue(maxsize=100)
-        if AI_AVAILABLE:
+        self.ai_available = AI_AVAILABLE  # Store as instance variable
+        if self.ai_available:
             try:
                 self.vision_ai = OpenAIVision()
                 logger.info("OpenAI Vision initialized")
             except Exception as e:
                 logger.warning(f"Failed to initialize OpenAI Vision: {e}")
-                AI_AVAILABLE = False
+                self.ai_available = False  # Update instance variable instead
         
         # Control state
         self.motor_speed = 30
@@ -385,7 +388,7 @@ class RemoteControlGUI:
         self._setup_tracking_tab()
 
         # Tab 4: AI Vision (if available)
-        if AI_AVAILABLE and self.vision_ai:
+        if self.ai_available and self.vision_ai:
             self.ai_tab = ttk.Frame(self.notebook)
             self.notebook.add(self.ai_tab, text="AI Vision")
             self._setup_ai_tab()
