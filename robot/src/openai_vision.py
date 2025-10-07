@@ -128,7 +128,8 @@ Please provide:
 4. Whether any humans are visible and their approximate positions
 5. Suggested navigation strategies for this environment
 
-Format your response as JSON with the following structure:
+IMPORTANT: Return ONLY valid JSON without any markdown formatting or code blocks.
+Format your response as pure JSON:
 {{
     "environment_description": "...",
     "objects": ["object1", "object2", ...],
@@ -188,7 +189,8 @@ Analyze this image and provide:
 3. Approximate distance (close <1m, medium 1-3m, far >3m)
 4. Recommended movement command for the robot
 
-Format your response as JSON:
+IMPORTANT: Return ONLY valid JSON without any markdown formatting or code blocks.
+Format your response as pure JSON:
 {
     "human_detected": true/false,
     "human_count": 0,
@@ -234,17 +236,19 @@ Format your response as JSON:
                 confidence=result.get('confidence', 0.0),
                 raw_response=response
             )
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
+            logger.warning(f"Failed to parse JSON response: {e}")
+            logger.debug(f"Raw response: {response[:500] if 'response' in locals() else 'N/A'}")
             # Fallback for non-JSON response
             return VisionAnalysis(
-                description=response,
+                description=response if 'response' in locals() else "Parse error",
                 objects_detected=[],
                 human_detected=False,
                 human_direction='none',
                 human_distance='unknown',
                 recommended_action='stop',
                 confidence=0.0,
-                raw_response=response
+                raw_response=response if 'response' in locals() else "Parse error"
             )
 
     def _call_api(self, messages: List[Dict], max_tokens: int = 500) -> str:
@@ -274,7 +278,23 @@ Format your response as JSON:
             response.raise_for_status()
 
             result = response.json()
-            return result['choices'][0]['message']['content']
+            content = result['choices'][0]['message']['content']
+
+            # Clean up response if it contains markdown code blocks
+            if '```json' in content:
+                # Extract JSON from markdown code blocks
+                start = content.find('```json') + 7
+                end = content.find('```', start)
+                if end != -1:
+                    content = content[start:end].strip()
+            elif '```' in content:
+                # Remove any other code blocks
+                start = content.find('```') + 3
+                end = content.find('```', start)
+                if end != -1:
+                    content = content[start:end].strip()
+
+            return content
 
         except requests.exceptions.RequestException as e:
             logger.error(f"API request failed: {e}")
