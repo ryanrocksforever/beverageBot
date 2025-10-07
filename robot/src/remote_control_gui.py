@@ -33,7 +33,7 @@ from .aruco_center_demo import ArUcoDetector, MarkerInfo
 # Initialize AI_AVAILABLE as global
 AI_AVAILABLE = False
 try:
-    from .openai_vision import OpenAIVision, VisionNavigator
+    from .openai_vision import OpenAIVision, VisionNavigator, ExplorationReport
     AI_AVAILABLE = True
 except ImportError as e:
     AI_AVAILABLE = False
@@ -671,6 +671,22 @@ class RemoteControlGUI:
         )
         nav_info.grid(row=1, column=1, padx=5, pady=5, sticky='w')
 
+        # Explore environment button
+        self.explore_btn = ttk.Button(
+            control_frame,
+            text="🗺️ Explore Environment",
+            command=self.start_exploration,
+            width=25
+        )
+        self.explore_btn.grid(row=2, column=0, padx=5, pady=5)
+
+        explore_info = ttk.Label(
+            control_frame,
+            text="Autonomously explore while avoiding obstacles",
+            font=('TkDefaultFont', 9)
+        )
+        explore_info.grid(row=2, column=1, padx=5, pady=5, sticky='w')
+
         # Stop AI button
         self.stop_ai_btn = ttk.Button(
             control_frame,
@@ -679,13 +695,13 @@ class RemoteControlGUI:
             state='disabled',
             width=25
         )
-        self.stop_ai_btn.grid(row=2, column=0, padx=5, pady=5)
+        self.stop_ai_btn.grid(row=3, column=0, padx=5, pady=5)
 
         # Status indicator
         self.ai_status_var = tk.StringVar(value="AI Status: Ready")
         status_label = ttk.Label(control_frame, textvariable=self.ai_status_var,
                                 font=('TkDefaultFont', 10, 'bold'))
-        status_label.grid(row=3, column=0, columnspan=2, pady=10)
+        status_label.grid(row=4, column=0, columnspan=2, pady=10)
 
         # AI Thinking/Output Display
         output_frame = ttk.LabelFrame(main_frame, text="AI Thinking Process & Output", padding="10")
@@ -1258,6 +1274,206 @@ class RemoteControlGUI:
             self.navigate_human_btn.config(state='normal')
             self.stop_ai_btn.config(state='disabled')
             self.ai_status_var.set("AI Status: Ready")
+
+    def start_exploration(self):
+        """Start autonomous environment exploration."""
+        if not self.vision_ai:
+            messagebox.showerror("AI Not Available", "OpenAI Vision is not configured. Please set OPENAI_API_KEY.")
+            return
+
+        # Ask user for exploration settings
+        exploration_window = tk.Toplevel(self.root)
+        exploration_window.title("Exploration Settings")
+        exploration_window.geometry("400x250")
+
+        # Duration setting
+        ttk.Label(exploration_window, text="Exploration Duration (seconds):",
+                 font=('TkDefaultFont', 10)).grid(row=0, column=0, padx=10, pady=10, sticky='w')
+        duration_var = tk.IntVar(value=60)
+        duration_spin = ttk.Spinbox(exploration_window, from_=30, to=300,
+                                    textvariable=duration_var, width=10, increment=30)
+        duration_spin.grid(row=0, column=1, padx=10, pady=10)
+
+        # Safety mode
+        ttk.Label(exploration_window, text="Safety Mode:",
+                 font=('TkDefaultFont', 10)).grid(row=1, column=0, padx=10, pady=10, sticky='w')
+        safety_var = tk.BooleanVar(value=True)
+        safety_check = ttk.Checkbutton(exploration_window, text="Prioritize safety over coverage",
+                                      variable=safety_var)
+        safety_check.grid(row=1, column=1, padx=10, pady=10)
+
+        # Info text
+        info_text = tk.Text(exploration_window, height=4, width=45, wrap=tk.WORD,
+                           font=('TkDefaultFont', 9))
+        info_text.grid(row=2, column=0, columnspan=2, padx=10, pady=10)
+        info_text.insert('1.0', "The robot will explore autonomously, avoiding obstacles "
+                               "and documenting what it finds. A detailed report will be "
+                               "generated at the end of exploration.")
+        info_text.config(state='disabled')
+
+        # Buttons
+        button_frame = ttk.Frame(exploration_window)
+        button_frame.grid(row=3, column=0, columnspan=2, pady=10)
+
+        def start_exploration_with_settings():
+            exploration_window.destroy()
+            self._start_exploration_worker(duration_var.get(), safety_var.get())
+
+        ttk.Button(button_frame, text="Start Exploration",
+                  command=start_exploration_with_settings).pack(side='left', padx=5)
+        ttk.Button(button_frame, text="Cancel",
+                  command=exploration_window.destroy).pack(side='left', padx=5)
+
+        exploration_window.transient(self.root)
+        exploration_window.grab_set()
+
+    def _start_exploration_worker(self, duration: int, safety_first: bool):
+        """Start exploration worker thread."""
+        self.ai_running = True
+        self.scan_btn.config(state='disabled')
+        self.navigate_human_btn.config(state='disabled')
+        self.explore_btn.config(state='disabled')
+        self.stop_ai_btn.config(state='normal')
+        self.ai_status_var.set(f"AI Status: Exploring for {duration}s...")
+
+        # Clear previous output
+        self.clear_ai_output()
+        self.log_ai_output(f"Starting autonomous exploration for {duration} seconds", 'info')
+        self.log_ai_output(f"Safety mode: {'Enabled' if safety_first else 'Disabled'}", 'info')
+        self.log_ai_output("=" * 50, 'info')
+
+        # Run exploration in separate thread
+        explore_thread = threading.Thread(
+            target=self._exploration_worker,
+            args=(duration, safety_first),
+            daemon=True
+        )
+        explore_thread.start()
+
+    def _exploration_worker(self, duration: int, safety_first: bool):
+        """Worker thread for environment exploration."""
+        try:
+            # Initialize navigator if needed
+            if not self.vision_navigator:
+                self.vision_navigator = VisionNavigator(self.robot, self.camera, self.vision_ai)
+
+            self.log_ai_output("\nPhase 1: Initial environment scan...", 'info')
+
+            # Track progress
+            start_time = time.time()
+            last_update_time = start_time
+
+            # Create progress monitoring thread
+            def monitor_progress():
+                while self.ai_running:
+                    elapsed = time.time() - start_time
+                    remaining = max(0, duration - elapsed)
+                    if time.time() - last_update_time > 5:
+                        self.ai_status_var.set(f"Exploring... {remaining:.0f}s remaining")
+                    time.sleep(1)
+
+            monitor_thread = threading.Thread(target=monitor_progress, daemon=True)
+            monitor_thread.start()
+
+            # Perform exploration
+            self.log_ai_output("Starting exploration algorithm...", 'info')
+            report = self.vision_navigator.explore_environment(duration=duration, safety_first=safety_first)
+
+            # Display the report
+            self.log_ai_output("\n" + "=" * 50, 'success')
+            self.log_ai_output("EXPLORATION COMPLETE", 'success')
+            self.log_ai_output("=" * 50, 'success')
+
+            self.log_ai_output(f"\n📊 EXPLORATION STATISTICS:", 'info')
+            self.log_ai_output(f"• Duration: {report.duration:.1f} seconds", 'ai_response')
+            self.log_ai_output(f"• Areas explored: {report.areas_explored}", 'ai_response')
+            self.log_ai_output(f"• Estimated distance: {report.total_distance_estimate:.1f} meters", 'ai_response')
+            self.log_ai_output(f"• Safety incidents: {report.safety_incidents}",
+                             'warning' if report.safety_incidents > 0 else 'ai_response')
+            self.log_ai_output(f"• Humans detected: {report.humans_detected}", 'ai_response')
+
+            self.log_ai_output(f"\n🏠 ENVIRONMENT:", 'info')
+            self.log_ai_output(f"• Type: {report.environment_type}", 'ai_response')
+
+            if report.obstacles_encountered:
+                self.log_ai_output(f"\n⚠️ OBSTACLES ENCOUNTERED:", 'warning')
+                for obstacle in report.obstacles_encountered[:10]:  # Show first 10
+                    self.log_ai_output(f"  • {obstacle}", 'ai_response')
+
+            if report.objects_found:
+                self.log_ai_output(f"\n📦 OBJECTS DISCOVERED:", 'info')
+                for obj in report.objects_found[:10]:  # Show first 10
+                    self.log_ai_output(f"  • {obj}", 'ai_response')
+
+            if report.navigation_challenges:
+                self.log_ai_output(f"\n🚧 NAVIGATION CHALLENGES:", 'warning')
+                for challenge in report.navigation_challenges:
+                    self.log_ai_output(f"  • {challenge}", 'warning')
+
+            self.log_ai_output(f"\n📝 SUMMARY:", 'success')
+            self.log_ai_output(report.summary, 'ai_response')
+
+            # Update analysis display with summary
+            self.update_analysis_display({
+                'duration': f"{report.duration:.1f}s",
+                'areas_explored': report.areas_explored,
+                'environment_type': report.environment_type,
+                'obstacles': len(report.obstacles_encountered),
+                'objects': len(report.objects_found),
+                'humans_detected': report.humans_detected,
+                'distance_traveled': f"{report.total_distance_estimate:.1f}m",
+                'safety_incidents': report.safety_incidents
+            })
+
+            # Save detailed report to file (optional)
+            self._save_exploration_report(report)
+
+        except Exception as e:
+            self.log_ai_output(f"\n❌ Error during exploration: {str(e)}", 'error')
+            logger.error(f"Exploration error: {e}", exc_info=True)
+
+        finally:
+            self.robot.stop_motors()
+            self.ai_running = False
+            self.scan_btn.config(state='normal')
+            self.navigate_human_btn.config(state='normal')
+            self.explore_btn.config(state='normal')
+            self.stop_ai_btn.config(state='disabled')
+            self.ai_status_var.set("AI Status: Ready")
+
+    def _save_exploration_report(self, report):
+        """Save exploration report to file."""
+        try:
+            from datetime import datetime
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"exploration_report_{timestamp}.json"
+
+            report_data = {
+                'timestamp': timestamp,
+                'duration': report.duration,
+                'areas_explored': report.areas_explored,
+                'obstacles_encountered': report.obstacles_encountered,
+                'objects_found': report.objects_found,
+                'humans_detected': report.humans_detected,
+                'environment_type': report.environment_type,
+                'navigation_challenges': report.navigation_challenges,
+                'safety_incidents': report.safety_incidents,
+                'total_distance_estimate': report.total_distance_estimate,
+                'summary': report.summary,
+                'detailed_observations': report.detailed_observations
+            }
+
+            # Create reports directory if it doesn't exist
+            os.makedirs('exploration_reports', exist_ok=True)
+            filepath = os.path.join('exploration_reports', filename)
+
+            with open(filepath, 'w') as f:
+                json.dump(report_data, f, indent=2)
+
+            self.log_ai_output(f"\n💾 Report saved to: {filepath}", 'success')
+
+        except Exception as e:
+            logger.error(f"Failed to save exploration report: {e}")
 
     def stop_ai_operation(self):
         """Stop current AI operation."""

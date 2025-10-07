@@ -8,6 +8,8 @@ This guide explains how to set up the OpenAI Vision features for BevBot.
 
 2. **Navigate to Closest Human**: AI-powered autonomous navigation that uses vision to find and approach the nearest human.
 
+3. **Explore Environment**: Autonomous exploration with obstacle avoidance that generates a detailed report of the environment, including objects found, obstacles encountered, and navigation challenges.
+
 ## Setup Instructions
 
 ### 1. Get OpenAI API Key
@@ -70,6 +72,7 @@ python -m src.remote_control_gui
 3. Use the available features:
    - **360° Surroundings Scan**: Click to perform a full environmental scan
    - **Navigate to Closest Human**: Click to start autonomous human-finding navigation
+   - **Explore Environment**: Click to start autonomous exploration with obstacle avoidance
    - **Stop AI Operation**: Emergency stop for any AI operation
 
 ## AI Output Display
@@ -86,6 +89,7 @@ The GUI shows:
 - Typical costs:
   - 360° scan (8 images): ~$0.02-0.05
   - Navigation (continuous): ~$0.01 per minute
+  - Exploration (60 seconds): ~$0.05-0.10
 
 ## Troubleshooting
 
@@ -110,6 +114,8 @@ The GUI shows:
 - Use the Stop button to immediately halt any AI operation
 - AI navigation includes obstacle detection and safety concerns
 - Always supervise the robot during AI operations
+- Exploration mode has a "Safety First" option that prioritizes collision avoidance
+- The robot will automatically back up and turn when obstacles are detected
 
 ## API Key Security
 

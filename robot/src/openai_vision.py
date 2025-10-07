@@ -304,6 +304,21 @@ Format your response as pure JSON:
             logger.error(f"Response: {response.text if 'response' in locals() else 'N/A'}")
             raise
 
+@dataclass
+class ExplorationReport:
+    """Detailed report from autonomous exploration."""
+    duration: float
+    areas_explored: int
+    obstacles_encountered: List[str]
+    objects_found: List[str]
+    humans_detected: int
+    environment_type: str
+    navigation_challenges: List[str]
+    safety_incidents: int
+    total_distance_estimate: float
+    summary: str
+    detailed_observations: List[Dict[str, Any]]
+
 class VisionNavigator:
     """High-level navigation using vision AI."""
 
@@ -321,6 +336,7 @@ class VisionNavigator:
         self.running = False
         self.last_action_time = 0
         self.action_cooldown = 0.5  # Minimum time between actions
+        self.exploration_log = []
 
     def scan_surroundings(self, num_images: int = 8, rotation_speed: int = 30) -> Dict[str, Any]:
         """Perform 360-degree scan and analyze surroundings.
@@ -443,6 +459,331 @@ class VisionNavigator:
         self.running = False
 
         return human_found
+
+    def analyze_for_exploration(self, image: np.ndarray) -> Dict[str, Any]:
+        """Analyze image for safe exploration navigation.
+
+        Args:
+            image: Current camera frame
+
+        Returns:
+            Dictionary with navigation analysis
+        """
+        base64_image = self.vision.encode_image(image)
+
+        prompt = """You are helping a robot explore an unknown environment safely.
+Analyze this image and provide navigation guidance to:
+1. Avoid obstacles and collisions
+2. Explore new areas efficiently
+3. Document interesting findings
+
+IMPORTANT: Return ONLY valid JSON without any markdown formatting.
+{
+    "obstacles": {
+        "immediate": ["description", ...],
+        "near": ["description", ...],
+        "far": ["description", ...]
+    },
+    "safe_directions": ["forward", "left", "right", "backward"],
+    "recommended_action": "forward|turn_left|turn_right|backward|stop",
+    "action_reason": "Why this action is recommended",
+    "action_duration": 0.5,
+    "exploration_value": "high|medium|low",
+    "interesting_features": ["feature1", "feature2", ...],
+    "environment_type": "indoor|outdoor|office|home|industrial|unknown",
+    "hazards": ["hazard1", ...],
+    "humans_visible": true/false,
+    "confidence": 0.0-1.0
+}"""
+
+        messages = [
+            {
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": prompt},
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{base64_image}",
+                            "detail": "low"
+                        }
+                    }
+                ]
+            }
+        ]
+
+        try:
+            response = self.vision._call_api(messages)
+            return json.loads(response)
+        except json.JSONDecodeError:
+            logger.warning("Failed to parse exploration analysis")
+            return {
+                "obstacles": {"immediate": [], "near": [], "far": []},
+                "safe_directions": [],
+                "recommended_action": "stop",
+                "action_reason": "Unable to analyze",
+                "confidence": 0.0
+            }
+
+    def explore_environment(self, duration: int = 60, safety_first: bool = True) -> ExplorationReport:
+        """Autonomously explore the environment while avoiding obstacles.
+
+        Args:
+            duration: Maximum exploration time in seconds
+            safety_first: If True, prioritizes safety over exploration coverage
+
+        Returns:
+            Detailed exploration report
+        """
+        self.running = True
+        start_time = time.time()
+        self.exploration_log = []
+
+        # Tracking variables
+        areas_explored = 0
+        obstacles_encountered = set()
+        objects_found = set()
+        humans_detected_count = 0
+        safety_incidents = 0
+        movement_history = []
+        environment_types = []
+
+        logger.info(f"Starting autonomous exploration for {duration} seconds")
+
+        # Initial 360 scan
+        logger.info("Performing initial environment scan...")
+        initial_scan = self.scan_surroundings(num_images=4, rotation_speed=25)
+        areas_explored += 1
+
+        # Log initial findings
+        if initial_scan.get('objects'):
+            objects_found.update(initial_scan['objects'])
+        if initial_scan.get('obstacles'):
+            obstacles_encountered.update(initial_scan['obstacles'])
+
+        exploration_step = 0
+        last_turn_direction = None
+        stuck_counter = 0
+
+        while self.running and (time.time() - start_time) < duration:
+            exploration_step += 1
+
+            # Capture and analyze current view
+            frame, _ = self.camera.capture_frame()
+            if frame is None:
+                time.sleep(0.1)
+                continue
+
+            analysis = self.analyze_for_exploration(frame)
+
+            # Log findings
+            self.exploration_log.append({
+                'step': exploration_step,
+                'timestamp': time.time() - start_time,
+                'analysis': analysis,
+                'action_taken': analysis.get('recommended_action', 'none')
+            })
+
+            # Update tracking
+            if analysis.get('interesting_features'):
+                objects_found.update(analysis['interesting_features'])
+            if analysis.get('obstacles', {}).get('immediate'):
+                obstacles_encountered.update(analysis['obstacles']['immediate'])
+            if analysis.get('obstacles', {}).get('near'):
+                obstacles_encountered.update(analysis['obstacles']['near'])
+            if analysis.get('humans_visible'):
+                humans_detected_count += 1
+            if analysis.get('environment_type'):
+                environment_types.append(analysis['environment_type'])
+
+            # Determine action
+            action = analysis.get('recommended_action', 'stop')
+            safe_dirs = analysis.get('safe_directions', [])
+
+            # Check if stuck
+            if len(movement_history) >= 3 and all(m == 'stop' for m in movement_history[-3:]):
+                stuck_counter += 1
+                logger.warning(f"Robot might be stuck (count: {stuck_counter})")
+
+                # Try to get unstuck
+                if stuck_counter > 2:
+                    logger.info("Attempting to get unstuck...")
+                    self.robot.move_backward(25)
+                    time.sleep(1.0)
+                    self.robot.turn_right(30)
+                    time.sleep(1.5)
+                    self.robot.stop_motors()
+                    stuck_counter = 0
+                    movement_history.append('unstuck')
+                    continue
+
+            # Safety check
+            immediate_obstacles = analysis.get('obstacles', {}).get('immediate', [])
+            if immediate_obstacles and safety_first:
+                logger.warning(f"Immediate obstacle detected: {immediate_obstacles}")
+                safety_incidents += 1
+
+                # Emergency stop and backup
+                self.robot.stop_motors()
+                time.sleep(0.2)
+                self.robot.move_backward(20)
+                time.sleep(0.5)
+                self.robot.stop_motors()
+
+                # Turn away from obstacle
+                if 'right' in safe_dirs:
+                    self.robot.turn_right(30)
+                    last_turn_direction = 'right'
+                elif 'left' in safe_dirs:
+                    self.robot.turn_left(30)
+                    last_turn_direction = 'left'
+                else:
+                    # 180 degree turn
+                    self.robot.turn_right(30)
+                    time.sleep(3.0)
+                    last_turn_direction = 'right'
+
+                time.sleep(1.0)
+                self.robot.stop_motors()
+                movement_history.append('avoid')
+                continue
+
+            # Execute recommended action
+            if action == 'forward' and 'forward' in safe_dirs:
+                speed = 25 if safety_first else 30
+                self.robot.move_forward(speed)
+                time.sleep(0.8)
+                movement_history.append('forward')
+
+            elif action == 'turn_left' or (action != 'forward' and 'left' in safe_dirs):
+                self.robot.turn_left(25)
+                time.sleep(0.5)
+                movement_history.append('left')
+                last_turn_direction = 'left'
+
+            elif action == 'turn_right' or (action != 'forward' and 'right' in safe_dirs):
+                self.robot.turn_right(25)
+                time.sleep(0.5)
+                movement_history.append('right')
+                last_turn_direction = 'right'
+
+            elif action == 'backward' or ('backward' in safe_dirs and not safe_dirs):
+                self.robot.move_backward(20)
+                time.sleep(0.5)
+                movement_history.append('backward')
+
+            else:
+                # No safe action, stop
+                self.robot.stop_motors()
+                movement_history.append('stop')
+
+                # Try turning to find new path
+                if stuck_counter < 2:
+                    if last_turn_direction == 'left':
+                        self.robot.turn_right(25)
+                        time.sleep(0.3)
+                        last_turn_direction = 'right'
+                    else:
+                        self.robot.turn_left(25)
+                        time.sleep(0.3)
+                        last_turn_direction = 'left'
+
+            self.robot.stop_motors()
+
+            # Periodic area scan
+            if exploration_step % 10 == 0:
+                logger.info(f"Exploration step {exploration_step}: Performing area scan")
+                areas_explored += 1
+                # Quick scan without full rotation
+                self.robot.turn_right(30)
+                time.sleep(2.0)
+                self.robot.turn_left(30)
+                time.sleep(2.0)
+                self.robot.stop_motors()
+
+            # Keep only last 10 movements in history
+            if len(movement_history) > 10:
+                movement_history = movement_history[-10:]
+
+            time.sleep(0.1)
+
+        # Final scan
+        logger.info("Performing final environment scan...")
+        final_scan = self.scan_surroundings(num_images=4, rotation_speed=25)
+        areas_explored += 1
+
+        # Stop robot
+        self.robot.stop_motors()
+        self.running = False
+
+        # Calculate statistics
+        exploration_duration = time.time() - start_time
+
+        # Determine most common environment type
+        if environment_types:
+            from collections import Counter
+            env_counter = Counter(environment_types)
+            primary_env = env_counter.most_common(1)[0][0]
+        else:
+            primary_env = "unknown"
+
+        # Estimate distance traveled (rough approximation)
+        forward_moves = movement_history.count('forward')
+        backward_moves = movement_history.count('backward')
+        estimated_distance = (forward_moves * 0.3) - (backward_moves * 0.2)  # meters
+
+        # Generate summary
+        summary = self.generate_exploration_summary(
+            initial_scan, final_scan, self.exploration_log,
+            list(obstacles_encountered), list(objects_found)
+        )
+
+        return ExplorationReport(
+            duration=exploration_duration,
+            areas_explored=areas_explored,
+            obstacles_encountered=list(obstacles_encountered),
+            objects_found=list(objects_found),
+            humans_detected=humans_detected_count,
+            environment_type=primary_env,
+            navigation_challenges=[f"Stuck {stuck_counter} times"] if stuck_counter > 0 else [],
+            safety_incidents=safety_incidents,
+            total_distance_estimate=estimated_distance,
+            summary=summary,
+            detailed_observations=self.exploration_log[-10:]  # Last 10 observations
+        )
+
+    def generate_exploration_summary(self, initial_scan: Dict, final_scan: Dict,
+                                    exploration_log: List, obstacles: List, objects: List) -> str:
+        """Generate a natural language summary of the exploration.
+
+        Args:
+            initial_scan: Initial environment scan results
+            final_scan: Final environment scan results
+            exploration_log: Log of exploration steps
+            obstacles: List of encountered obstacles
+            objects: List of discovered objects
+
+        Returns:
+            Natural language summary
+        """
+        prompt = f"""Based on this robot exploration data, provide a concise summary (3-4 sentences):
+
+Initial scan: {initial_scan.get('environment_description', 'No initial data')}
+Final scan: {final_scan.get('environment_description', 'No final data')}
+Obstacles encountered: {', '.join(obstacles[:10]) if obstacles else 'None'}
+Objects found: {', '.join(objects[:10]) if objects else 'None'}
+Number of exploration steps: {len(exploration_log)}
+
+Provide a natural, informative summary of what the robot discovered during exploration."""
+
+        messages = [{"role": "user", "content": prompt}]
+
+        try:
+            summary = self.vision._call_api(messages, max_tokens=200)
+            return summary
+        except Exception as e:
+            logger.error(f"Failed to generate summary: {e}")
+            return f"Explored environment, encountered {len(obstacles)} obstacles and found {len(objects)} objects."
 
     def stop(self):
         """Stop navigation."""
